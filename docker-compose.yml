@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  postgres_dw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dw-postgres:1.0
+    container_name: postgres_dw
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_dw_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_dw_data:
