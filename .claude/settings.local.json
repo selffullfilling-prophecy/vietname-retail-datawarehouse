@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(reg query:*)",
+      "Bash(source venv_dw/Scripts/activate)",
+      "Bash(pip install:*)",
+      "Bash(./venv_dw/Scripts/python.exe -m pip install pyodbc)",
+      "Bash(docker compose:*)",
+      "Bash(docker pull:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker ps:*)",
+      "Bash(./venv_dw/Scripts/python.exe build_dw.py --mode schema)",
+      "Bash(./venv_dw/Scripts/python.exe seed_dw.py --mode reset-and-seed)",
+      "Bash(./venv_dw/Scripts/python.exe build_dw.py --mode all)",
+      "Bash(./venv_dw/Scripts/python.exe -c \"from dotenv import load_dotenv; import os; load_dotenv\\(override=True\\); print\\(repr\\(os.getenv\\(''SA_PASSWORD''\\)\\)\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 ./venv_dw/Scripts/python.exe run_tests.py)",
+      "Bash(PYTHONIOENCODING=utf-8 ./venv_dw/Scripts/python.exe -c \":*)",
+      "Bash(docker exec:*)"
+    ]
+  }
+}

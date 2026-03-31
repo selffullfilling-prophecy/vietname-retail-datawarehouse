@@ -1,19 +1,18 @@
 version: "3.9"
 
 services:
-  postgres_dw:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: dw-postgres:1.0
-    container_name: postgres_dw
+  sqlserver_dw:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_dw
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_PID: Express
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${SQLSERVER_PORT:-1433}:1433"
     volumes:
-      - postgres_dw_data:/var/lib/postgresql/data
+      - sqlserver_dw_data:/var/opt/mssql
 
 volumes:
-  postgres_dw_data:
+  sqlserver_dw_data:

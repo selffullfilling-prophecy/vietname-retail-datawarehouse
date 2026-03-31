@@ -1,6 +1,6 @@
 # 1) tạo file .env từ .env.example
-# 2) build và chạy postgres
-docker compose up -d --build
+# 2) chạy SQL Server container
+docker compose up -d
 
 # 3) tạo schema DW
 python build_dw.py --mode schema

@@ -1,158 +1,200 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from typing import Iterable
-from db_config import DATABASE_URL, SAFE_DATABASE_URL
-from dotenv import load_dotenv
-load_dotenv()
+
+from db_config import CONNECTION_STRING, MASTER_CONNECTION_STRING, DB_NAME, DB_SCHEMA, SAFE_DATABASE_URL
+
 try:
-    import psycopg
+    import pyodbc
 except Exception as exc:  # pragma: no cover
     raise SystemExit(
-        "Chua cai thu vien 'psycopg'. Hay chay: pip install psycopg[binary]"
+        "Chua cai thu vien 'pyodbc'. Hay chay: pip install pyodbc"
     ) from exc
 
 
-CREATE_SQL = r"""
-CREATE SCHEMA IF NOT EXISTS dw;
+DROP_TABLES_SQL = f"""
+IF OBJECT_ID('{DB_SCHEMA}.fact_sale', 'U') IS NOT NULL DROP TABLE {DB_SCHEMA}.fact_sale;
+IF OBJECT_ID('{DB_SCHEMA}.fact_inventory_snapshot', 'U') IS NOT NULL DROP TABLE {DB_SCHEMA}.fact_inventory_snapshot;
+IF OBJECT_ID('{DB_SCHEMA}.dim_customer', 'U') IS NOT NULL DROP TABLE {DB_SCHEMA}.dim_customer;
+IF OBJECT_ID('{DB_SCHEMA}.dim_store', 'U') IS NOT NULL DROP TABLE {DB_SCHEMA}.dim_store;
+IF OBJECT_ID('{DB_SCHEMA}.dim_product', 'U') IS NOT NULL DROP TABLE {DB_SCHEMA}.dim_product;
+IF OBJECT_ID('{DB_SCHEMA}.dim_time', 'U') IS NOT NULL DROP TABLE {DB_SCHEMA}.dim_time;
 
-CREATE TABLE IF NOT EXISTS dw.dim_time (
+IF EXISTS (SELECT * FROM sys.schemas WHERE name = '{DB_SCHEMA}')
+    DROP SCHEMA {DB_SCHEMA};
+"""
+
+CREATE_SCHEMA_SQL = f"CREATE SCHEMA {DB_SCHEMA};"
+
+CREATE_TABLES_SQL = f"""
+CREATE TABLE {DB_SCHEMA}.dim_time (
     timekey      INT PRIMARY KEY,
-    ngay         DATE NOT NULL,
-    thang        INT NOT NULL,
-    nam          INT NOT NULL
+    thang        INT NOT NULL CHECK (thang BETWEEN 1 AND 12),
+    quy          INT NOT NULL CHECK (quy BETWEEN 1 AND 4),
+    nam          INT NOT NULL,
+    CONSTRAINT uq_dim_time_year_month UNIQUE (nam, thang)
 );
 
-CREATE TABLE IF NOT EXISTS dw.dim_product (
+CREATE TABLE {DB_SCHEMA}.dim_product (
     productkey   INT PRIMARY KEY,
-    mamh         VARCHAR(20) NOT NULL UNIQUE,
-    mota         VARCHAR(255) NOT NULL,
-    kichco       VARCHAR(50),
+    mamh         NVARCHAR(20) NOT NULL UNIQUE,
+    mota         NVARCHAR(255) NOT NULL,
+    kichco       NVARCHAR(50),
     trongluong   DECIMAL(10,2),
-    gia          DECIMAL(18,2)
+    gia          DECIMAL(18,2) NOT NULL CHECK (gia >= 0)
 );
 
-CREATE TABLE IF NOT EXISTS dw.dim_order (
-    orderkey     INT PRIMARY KEY,
-    madon        VARCHAR(20) NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS dw.dim_thanhpho (
-    mathanhpho   VARCHAR(20) PRIMARY KEY,
-    tenthanhpho  VARCHAR(100) NOT NULL,
-    bang         VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS dw.dim_customer (
+CREATE TABLE {DB_SCHEMA}.dim_customer (
     customerkey   INT PRIMARY KEY,
-    makh          VARCHAR(20) NOT NULL UNIQUE,
-    tenkh         VARCHAR(100) NOT NULL,
-    mathanhpho    VARCHAR(20) NOT NULL,
-    iskhdulich    BOOLEAN NOT NULL DEFAULT FALSE,
-    iskhbuudien   BOOLEAN NOT NULL DEFAULT FALSE,
-    CONSTRAINT fk_dim_customer_thanhpho
-        FOREIGN KEY (mathanhpho) REFERENCES dw.dim_thanhpho(mathanhpho)
+    makh          NVARCHAR(20) NOT NULL UNIQUE,
+    tenkh         NVARCHAR(100) NOT NULL,
+    thanhpho      NVARCHAR(100) NOT NULL,
+    bang          NVARCHAR(100) NOT NULL,
+    iskhdulich    BIT NOT NULL DEFAULT 0,
+    iskhbuudien   BIT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_customer_subtype CHECK (iskhdulich = 1 OR iskhbuudien = 1)
 );
 
-CREATE TABLE IF NOT EXISTS dw.dim_store (
+CREATE TABLE {DB_SCHEMA}.dim_store (
     storekey      INT PRIMARY KEY,
-    macuahang     VARCHAR(20) NOT NULL UNIQUE,
-    sodienthoai   VARCHAR(20),
-    mathanhpho    VARCHAR(20) NOT NULL,
-    diachivp      VARCHAR(255),
-    CONSTRAINT fk_dim_store_thanhpho
-        FOREIGN KEY (mathanhpho) REFERENCES dw.dim_thanhpho(mathanhpho)
+    macuahang     NVARCHAR(20) NOT NULL UNIQUE,
+    sodienthoai   NVARCHAR(20),
+    thanhpho      NVARCHAR(100) NOT NULL,
+    bang          NVARCHAR(100) NOT NULL,
+    diachivp      NVARCHAR(255)
 );
 
-CREATE TABLE IF NOT EXISTS dw.fact_orderdetail (
-    timekey       INT NOT NULL,
-    orderkey      INT NOT NULL,
-    customerkey   INT NOT NULL,
+CREATE TABLE {DB_SCHEMA}.fact_sale (
     productkey    INT NOT NULL,
-    soluongdat    INT NOT NULL CHECK (soluongdat > 0),
+    timekey       INT NOT NULL,
+    storekey      INT NOT NULL,
+    customerkey   INT NOT NULL,
+    soluongban    INT NOT NULL CHECK (soluongban > 0),
     tongtien      DECIMAL(18,2) NOT NULL CHECK (tongtien >= 0),
 
-    CONSTRAINT pk_fact_orderdetail
-        PRIMARY KEY (timekey, orderkey, customerkey, productkey),
+    CONSTRAINT pk_fact_sale
+        PRIMARY KEY (productkey, timekey, storekey, customerkey),
 
-    CONSTRAINT fk_fact_orderdetail_time
-        FOREIGN KEY (timekey) REFERENCES dw.dim_time(timekey),
-    CONSTRAINT fk_fact_orderdetail_order
-        FOREIGN KEY (orderkey) REFERENCES dw.dim_order(orderkey),
-    CONSTRAINT fk_fact_orderdetail_customer
-        FOREIGN KEY (customerkey) REFERENCES dw.dim_customer(customerkey),
-    CONSTRAINT fk_fact_orderdetail_product
-        FOREIGN KEY (productkey) REFERENCES dw.dim_product(productkey)
+    CONSTRAINT fk_fact_sale_product
+        FOREIGN KEY (productkey) REFERENCES {DB_SCHEMA}.dim_product(productkey),
+    CONSTRAINT fk_fact_sale_time
+        FOREIGN KEY (timekey) REFERENCES {DB_SCHEMA}.dim_time(timekey),
+    CONSTRAINT fk_fact_sale_store
+        FOREIGN KEY (storekey) REFERENCES {DB_SCHEMA}.dim_store(storekey),
+    CONSTRAINT fk_fact_sale_customer
+        FOREIGN KEY (customerkey) REFERENCES {DB_SCHEMA}.dim_customer(customerkey)
 );
 
-CREATE TABLE IF NOT EXISTS dw.fact_inventory (
-    timekey         INT NOT NULL,
-    storekey        INT NOT NULL,
-    productkey      INT NOT NULL,
-    soluongtonkho   INT NOT NULL CHECK (soluongtonkho >= 0),
+CREATE TABLE {DB_SCHEMA}.fact_inventory_snapshot (
+    timekey          INT NOT NULL,
+    storekey         INT NOT NULL,
+    productkey       INT NOT NULL,
+    soluongtonkho    INT NOT NULL CHECK (soluongtonkho >= 0),
 
-    CONSTRAINT pk_fact_inventory
+    CONSTRAINT pk_fact_inventory_snapshot
         PRIMARY KEY (timekey, storekey, productkey),
 
-    CONSTRAINT fk_fact_inventory_time
-        FOREIGN KEY (timekey) REFERENCES dw.dim_time(timekey),
-    CONSTRAINT fk_fact_inventory_store
-        FOREIGN KEY (storekey) REFERENCES dw.dim_store(storekey),
-    CONSTRAINT fk_fact_inventory_product
-        FOREIGN KEY (productkey) REFERENCES dw.dim_product(productkey)
+    CONSTRAINT fk_inventory_snapshot_time
+        FOREIGN KEY (timekey) REFERENCES {DB_SCHEMA}.dim_time(timekey),
+    CONSTRAINT fk_inventory_snapshot_store
+        FOREIGN KEY (storekey) REFERENCES {DB_SCHEMA}.dim_store(storekey),
+    CONSTRAINT fk_inventory_snapshot_product
+        FOREIGN KEY (productkey) REFERENCES {DB_SCHEMA}.dim_product(productkey)
 );
 
-CREATE INDEX IF NOT EXISTS idx_fact_orderdetail_timekey
-    ON dw.fact_orderdetail(timekey);
-CREATE INDEX IF NOT EXISTS idx_fact_orderdetail_orderkey
-    ON dw.fact_orderdetail(orderkey);
-CREATE INDEX IF NOT EXISTS idx_fact_orderdetail_customerkey
-    ON dw.fact_orderdetail(customerkey);
-CREATE INDEX IF NOT EXISTS idx_fact_orderdetail_productkey
-    ON dw.fact_orderdetail(productkey);
-CREATE INDEX IF NOT EXISTS idx_fact_inventory_timekey
-    ON dw.fact_inventory(timekey);
-CREATE INDEX IF NOT EXISTS idx_fact_inventory_storekey
-    ON dw.fact_inventory(storekey);
-CREATE INDEX IF NOT EXISTS idx_fact_inventory_productkey
-    ON dw.fact_inventory(productkey);
+CREATE INDEX idx_dim_time_year_quarter_month
+    ON {DB_SCHEMA}.dim_time(nam, quy, thang);
+
+CREATE INDEX idx_dim_product_mamh
+    ON {DB_SCHEMA}.dim_product(mamh);
+
+CREATE INDEX idx_dim_customer_makh
+    ON {DB_SCHEMA}.dim_customer(makh);
+
+CREATE INDEX idx_dim_customer_city_region
+    ON {DB_SCHEMA}.dim_customer(thanhpho, bang);
+
+CREATE INDEX idx_dim_store_macuahang
+    ON {DB_SCHEMA}.dim_store(macuahang);
+
+CREATE INDEX idx_dim_store_city_region
+    ON {DB_SCHEMA}.dim_store(thanhpho, bang);
+
+CREATE INDEX idx_fact_sale_timekey
+    ON {DB_SCHEMA}.fact_sale(timekey);
+
+CREATE INDEX idx_fact_sale_storekey
+    ON {DB_SCHEMA}.fact_sale(storekey);
+
+CREATE INDEX idx_fact_sale_customerkey
+    ON {DB_SCHEMA}.fact_sale(customerkey);
+
+CREATE INDEX idx_fact_sale_productkey
+    ON {DB_SCHEMA}.fact_sale(productkey);
+
+CREATE INDEX idx_fact_sale_store_product_time
+    ON {DB_SCHEMA}.fact_sale(storekey, productkey, timekey);
+
+CREATE INDEX idx_inventory_snapshot_timekey
+    ON {DB_SCHEMA}.fact_inventory_snapshot(timekey);
+
+CREATE INDEX idx_inventory_snapshot_storekey
+    ON {DB_SCHEMA}.fact_inventory_snapshot(storekey);
+
+CREATE INDEX idx_inventory_snapshot_productkey
+    ON {DB_SCHEMA}.fact_inventory_snapshot(productkey);
+
+CREATE INDEX idx_inventory_snapshot_store_product_time
+    ON {DB_SCHEMA}.fact_inventory_snapshot(storekey, productkey, timekey);
 """
 
 
+def ensure_database(conn_str: str, db_name: str) -> None:
+    conn = pyodbc.connect(conn_str, autocommit=True)
+    cur = conn.cursor()
+    cur.execute(
+        f"IF DB_ID('{db_name}') IS NULL CREATE DATABASE [{db_name}];"
+    )
+    cur.close()
+    conn.close()
+    print(f"[OK] Database '{db_name}' da san sang.")
 
 
-
-def run_sql(conn: psycopg.Connection, sql_text: str, label: str) -> None:
-    with conn.cursor() as cur:
-        cur.execute(sql_text)
+def run_sql(conn: pyodbc.Connection, sql_text: str, label: str) -> None:
+    cur = conn.cursor()
+    cur.execute(sql_text)
+    cur.close()
     conn.commit()
     print(f"[OK] {label}")
 
 
 def parse_args(argv: Iterable[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build and seed PostgreSQL DW")
+    parser = argparse.ArgumentParser(
+        description="Tao lai schema SQL Server DW theo kien truc cuoi cung."
+    )
     parser.add_argument(
         "--mode",
-        choices=["all", "schema", "seed"],
-        default="all",
-        help="all: tao schema + seed, schema: chi tao bang, seed: chi chen du lieu",
+        choices=["schema", "all"],
+        default="schema",
+        help="schema/all deu tao lai schema; giu lai de tuong thich lenh cu.",
     )
     return parser.parse_args(list(argv))
 
 
 def main(argv: Iterable[str]) -> int:
-    args = parse_args(argv)
-    conn_str = DATABASE_URL
+    _args = parse_args(argv)
     print(f"Dang ket noi toi: {SAFE_DATABASE_URL}")
 
     try:
-        with psycopg.connect(conn_str, autocommit=False) as conn:
-            if args.mode in ("all", "schema"):
-                run_sql(conn, CREATE_SQL, "Tao schema DW")
-            if args.mode in ("all", "seed"):
-                run_sql(conn, SEED_SQL, "Chen du lieu mau")
+        ensure_database(MASTER_CONNECTION_STRING, DB_NAME)
+
+        conn = pyodbc.connect(CONNECTION_STRING, autocommit=False)
+        run_sql(conn, DROP_TABLES_SQL, "Xoa schema cu")
+        run_sql(conn, CREATE_SCHEMA_SQL, "Tao schema moi")
+        run_sql(conn, CREATE_TABLES_SQL, "Tao bang va index")
+        conn.close()
     except Exception as exc:
         print(f"[ERROR] {exc}")
         return 1
