@@ -42,8 +42,7 @@ CREATE TABLE {DB_SCHEMA}.dim_product (
     mamh         NVARCHAR(20) NOT NULL UNIQUE,
     mota         NVARCHAR(255) NOT NULL,
     kichco       NVARCHAR(50),
-    trongluong   DECIMAL(10,2),
-    gia          DECIMAL(18,2) NOT NULL CHECK (gia >= 0)
+    trongluong   DECIMAL(10,2)
 );
 
 CREATE TABLE {DB_SCHEMA}.dim_customer (

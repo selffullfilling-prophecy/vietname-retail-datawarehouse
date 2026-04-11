@@ -6,14 +6,13 @@ seed_dw2.py
 
 Sinh du lieu lich su cho 2 nam 2023-2024.
 
-Luu y quan trong:
-- Schema hien tai chi co mot cot dw.dim_product.gia cho moi product.
-- Vi vay, cung mot product khong the dong thoi mang hai muc gia khac nhau
-  cho 2023-2024 va 2025-2026 trong cung mot warehouse.
-- Script nay duoc viet theo huong seed mot "historical slice" rieng:
-  1. giu 180 ma hang chung voi slice moi hon
-  2. them 10 ma hang chi xuat hien trong 2023-2024
-  3. dieu chinh gia nhe cho mot phan cac ma hang chung
+Luu y:
+- Gia ban khong luu trong dim_product.
+- Gia duoc mo phong thong qua fact_sale.tongtien / fact_sale.soluongban.
+- Script nay tao bo du lieu 2023-2024 voi:
+  1. 180 ma hang chung
+  2. 10 ma hang chi xuat hien o slice lich su
+  3. mot phan ma hang chung co don gia lich su khac nhe
 """
 
 import argparse
@@ -101,18 +100,8 @@ def _validate_config(cfg: HistoricalConfig) -> None:
 def gen_dim_product_historical(
     cfg: HistoricalConfig,
     rnd: random.Random,
-) -> Tuple[List[Tuple[int, str, str, str, Decimal, Decimal]], List[str]]:
-    rows: List[Tuple[int, str, str, str, Decimal, Decimal]] = []
-    changed_codes: List[str] = []
-
-    shared_changed_count = int(round(cfg.base_product_count * cfg.historical_price_change_ratio))
-    if cfg.base_product_count > 0 and cfg.historical_price_change_ratio > 0:
-        shared_changed_count = max(1, shared_changed_count)
-
-    changed_product_keys = set(
-        rnd.sample(range(1, cfg.base_product_count + 1), shared_changed_count)
-    ) if shared_changed_count > 0 else set()
-
+) -> List[Tuple[int, str, str, str, Decimal]]:
+    rows: List[Tuple[int, str, str, str, Decimal]] = []
     for i in range(1, cfg.num_products + 1):
         productkey = i
         mamh = f"MH{i:04d}"
@@ -124,21 +113,55 @@ def gen_dim_product_historical(
 
         kichco = SIZE_VALUES[(i - 1) % len(SIZE_VALUES)]
         trongluong = decimal2(round(rnd.uniform(0.10, 5.00), 2))
-        gia = decimal2(rnd.randint(20, 500) * 1000)
+        rows.append((productkey, mamh, mota, kichco, trongluong))
 
-        if i in changed_product_keys:
+    return rows
+
+
+def build_historical_product_year_price_book(
+    cfg: HistoricalConfig,
+    time_rows: Sequence[Tuple[int, int, int, int]],
+    product_rows: Sequence[Tuple[int, str, str, str, Decimal]],
+    rnd: random.Random,
+) -> Tuple[dict[tuple[int, int], Decimal], List[str]]:
+    years = sorted({row[3] for row in time_rows})
+    first_year = years[0]
+    last_year = years[-1]
+    productkeys = [row[0] for row in product_rows]
+
+    price_book: dict[tuple[int, int], Decimal] = {}
+    base_price_by_product = {
+        productkey: decimal2(rnd.randint(18, 460) * 1000)
+        for productkey in productkeys
+    }
+
+    for productkey in productkeys:
+        price_book[(first_year, productkey)] = base_price_by_product[productkey]
+
+    shared_changed_count = int(round(cfg.base_product_count * cfg.historical_price_change_ratio))
+    if cfg.base_product_count > 0 and cfg.historical_price_change_ratio > 0:
+        shared_changed_count = max(1, shared_changed_count)
+
+    changed_product_keys = set(
+        rnd.sample(range(1, cfg.base_product_count + 1), shared_changed_count)
+    ) if shared_changed_count > 0 else set()
+
+    changed_codes: List[str] = []
+    for productkey in productkeys:
+        prev_price = price_book[(first_year, productkey)]
+        if productkey in changed_product_keys:
             direction = -1 if rnd.random() < 0.70 else 1
             delta_pct = rnd.uniform(
                 cfg.historical_price_delta_min_pct,
                 cfg.historical_price_delta_max_pct,
             )
             factor = Decimal(str(1 + (direction * delta_pct)))
-            gia = decimal2(gia * factor)
-            changed_codes.append(mamh)
+            price_book[(last_year, productkey)] = decimal2(prev_price * factor)
+            changed_codes.append(f"MH{productkey:04d}")
+        else:
+            price_book[(last_year, productkey)] = prev_price
 
-        rows.append((productkey, mamh, mota, kichco, trongluong, gia))
-
-    return rows, changed_codes
+    return price_book, changed_codes
 
 
 def seed_all(conn, cfg: HistoricalConfig) -> None:
@@ -147,7 +170,13 @@ def seed_all(conn, cfg: HistoricalConfig) -> None:
     fake.seed_instance(cfg.random_seed)
 
     time_rows = build_time_rows(cfg)
-    product_rows, changed_codes = gen_dim_product_historical(cfg, rnd)
+    product_rows = gen_dim_product_historical(cfg, rnd)
+    product_year_price_book, changed_codes = build_historical_product_year_price_book(
+        cfg,
+        time_rows,
+        product_rows,
+        rnd,
+    )
     customer_rows = gen_dim_customer(cfg, rnd, fake)
     store_rows = gen_dim_store(cfg, rnd)
 
@@ -159,6 +188,7 @@ def seed_all(conn, cfg: HistoricalConfig) -> None:
         customer_rows,
         store_rows,
         store_product_map,
+        product_year_price_book,
         rnd,
     )
     sales_by_store_product_month = aggregate_monthly_sales(sale_rows)
@@ -177,9 +207,9 @@ def seed_all(conn, cfg: HistoricalConfig) -> None:
     insert_many(
         cur,
         f"{SCHEMA}.dim_product",
-        "productkey, mamh, mota, kichco, trongluong, gia",
+        "productkey, mamh, mota, kichco, trongluong",
         product_rows,
-        "?, ?, ?, ?, ?, ?",
+        "?, ?, ?, ?, ?",
     )
     insert_many(
         cur,
@@ -289,9 +319,8 @@ def main(argv: Iterable[str]) -> None:
 
     print(f"Dang ket noi toi: {SAFE_DATABASE_URL}")
     print(
-        "Canh bao: seed_dw2.py tao bo du lieu 2023-2024 rieng. "
-        "No khong gop dong thoi gia 2023-2024 va 2025-2026 cho cung mot product "
-        "trong schema hien tai."
+        "seed_dw2.py se tao bo du lieu 2023-2024 voi 10 san pham lich su bo sung "
+        "va don gia ban nam sau co thay doi nhe cho mot phan san pham chung."
     )
 
     conn = connect(CONNECTION_STRING)

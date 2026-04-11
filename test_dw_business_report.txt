@@ -1,0 +1,273 @@
+DW BUSINESS TEST REPORT
+================================================================================
+Data span: 2022 -> 2025 (4 nam)
+Latest timekey: 202512
+Sample city for YC7: Bắc Ninh
+
+Schema note
+--------------------------------------------------------------------------------
+YC2, YC5, YC8 khong the kiem tra chinh xac 100% theo nghiep vu don dat hang vi schema hien tai khong co order_id, order_date, va order line rieng.
+Cac query PARTIAL duoi day la best-effort tren grain hien co cua fact_sale.
+
+[PASS] Q0 - Chat luong du lieu tong quan
+Rows returned: 6
+table_name              | row_count
+------------------------+----------
+dim_customer            | 3000     
+dim_product             | 190      
+dim_store               | 160      
+dim_time                | 48       
+fact_inventory_snapshot | 905448   
+fact_sale               | 180455   
+
+[PASS] Q0b - Kiem tra dim_product khong con cot gia
+Rows returned: 5
+COLUMN_NAME | DATA_TYPE
+------------+----------
+productkey  | int      
+mamh        | nvarchar 
+mota        | nvarchar 
+kichco      | nvarchar 
+trongluong  | decimal  
+
+[PASS] Q1 - YC1. Cua hang + thong tin mat hang da ban + don gia suy ra
+Rows returned: 20
+macuahang | thanhpho | bang     | sodienthoai  | mamh   | mota         | kichco | trongluong | don_gia_binh_quan
+----------+----------+----------+--------------+--------+--------------+--------+------------+------------------
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0001 | Mat hang 001 | S      | 3.54       | 177003.76        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0002 | Mat hang 002 | M      | 2.98       | 337000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0003 | Mat hang 003 | L      | 3.28       | 92000.00         
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0004 | Mat hang 004 | XL     | 3.56       | 352000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0006 | Mat hang 006 | Free   | 4.09       | 271300.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0007 | Mat hang 007 | Nhỏ    | 3.22       | 224000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0008 | Mat hang 008 | Vừa    | 1.07       | 457000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0009 | Mat hang 009 | Lớn    | 2.81       | 412000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0010 | Mat hang 010 | S      | 1.87       | 124000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0011 | Mat hang 011 | M      | 4.32       | 255500.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0012 | Mat hang 012 | L      | 4.56       | 226555.56        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0013 | Mat hang 013 | XL     | 3.95       | 242314.25        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0014 | Mat hang 014 | XXL    | 1.05       | 334500.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0015 | Mat hang 015 | Free   | 3.72       | 144256.30        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0016 | Mat hang 016 | Nhỏ    | 4.89       | 368000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0017 | Mat hang 017 | Vừa    | 2.01       | 313549.65        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0020 | Mat hang 020 | M      | 1.98       | 418000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0021 | Mat hang 021 | L      | 1.57       | 182000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0022 | Mat hang 022 | XL     | 2.90       | 292000.00        
+CH0001    | Hà Nội   | Miền Bắc | +84780465264 | MH0023 | Mat hang 023 | XXL    | 4.97       | 259529.41        
+
+[PARTIAL] Q2 - YC2. Don dat hang theo khach hang va ngay dat
+Note: Schema hien tai khong co order_id hoac ngay_dat_hang cap don. Query duoi day chi mo phong theo grain fact_sale (khach hang, thang, cua hang, mat hang).
+Rows returned: 20
+makh    | tenkh           | ky_thang | nam  | thang | macuahang | mamh   | soluongban | tongtien  
+--------+-----------------+----------+------+-------+-----------+--------+------------+-----------
+KH00001 | Nam Mai Bảo Mai | 202201   | 2022 | 1     | CH0007    | MH0183 | 2          | 810000.00 
+KH00001 | Nam Mai Bảo Mai | 202201   | 2022 | 1     | CH0009    | MH0157 | 3          | 876000.00 
+KH00001 | Nam Mai Bảo Mai | 202201   | 2022 | 1     | CH0010    | MH0014 | 4          | 1560000.00
+KH00001 | Nam Mai Bảo Mai | 202201   | 2022 | 1     | CH0012    | MH0006 | 2          | 474000.00 
+KH00001 | Nam Mai Bảo Mai | 202202   | 2022 | 2     | CH0138    | MH0129 | 1          | 138000.00 
+KH00001 | Nam Mai Bảo Mai | 202204   | 2022 | 4     | CH0001    | MH0159 | 1          | 301000.00 
+KH00001 | Nam Mai Bảo Mai | 202204   | 2022 | 4     | CH0007    | MH0121 | 5          | 865000.00 
+KH00001 | Nam Mai Bảo Mai | 202204   | 2022 | 4     | CH0017    | MH0131 | 2          | 54000.00  
+KH00001 | Nam Mai Bảo Mai | 202205   | 2022 | 5     | CH0006    | MH0098 | 1          | 447000.00 
+KH00001 | Nam Mai Bảo Mai | 202205   | 2022 | 5     | CH0009    | MH0050 | 4          | 272000.00 
+KH00001 | Nam Mai Bảo Mai | 202205   | 2022 | 5     | CH0069    | MH0083 | 1          | 283000.00 
+KH00001 | Nam Mai Bảo Mai | 202206   | 2022 | 6     | CH0038    | MH0011 | 1          | 133000.00 
+KH00001 | Nam Mai Bảo Mai | 202207   | 2022 | 7     | CH0098    | MH0089 | 6          | 1110000.00
+KH00001 | Nam Mai Bảo Mai | 202208   | 2022 | 8     | CH0007    | MH0184 | 4          | 112000.00 
+KH00001 | Nam Mai Bảo Mai | 202208   | 2022 | 8     | CH0011    | MH0161 | 2          | 888000.00 
+KH00001 | Nam Mai Bảo Mai | 202208   | 2022 | 8     | CH0037    | MH0098 | 1          | 447000.00 
+KH00001 | Nam Mai Bảo Mai | 202210   | 2022 | 10    | CH0001    | MH0150 | 5          | 1730000.00
+KH00001 | Nam Mai Bảo Mai | 202212   | 2022 | 12    | CH0002    | MH0017 | 3          | 228000.00 
+KH00001 | Nam Mai Bảo Mai | 202301   | 2023 | 1     | CH0013    | MH0015 | 3          | 576000.00 
+KH00001 | Nam Mai Bảo Mai | 202301   | 2023 | 1     | CH0048    | MH0179 | 6          | 882000.00 
+
+[PASS] Q3 - YC3. Cua hang co ban cac mat hang duoc KH00001 da mua
+Rows returned: 20
+macuahang | thanhpho  | sodienthoai 
+----------+-----------+-------------
+CH0001    | Hà Nội    | +84780465264
+CH0002    | Hà Nội    | +84362993978
+CH0003    | Hà Nội    | +84335635253
+CH0004    | Hà Nội    | +84761486217
+CH0005    | Hà Nội    | +84893950669
+CH0006    | Hà Nội    | +84930147058
+CH0007    | Hà Nội    | +84886939742
+CH0008    | Hà Nội    | +84968405137
+CH0009    | Hà Nội    | +84701381708
+CH0010    | Hà Nội    | +84762734834
+CH0011    | Hà Nội    | +84899059961
+CH0012    | Hà Nội    | +84343734926
+CH0013    | Hà Nội    | +84902204255
+CH0014    | Hải Phòng | +84815848260
+CH0015    | Hải Phòng | +84905877739
+CH0016    | Hải Phòng | +84973223080
+CH0017    | Hải Phòng | +84961200618
+CH0018    | Hải Phòng | +84835942610
+CH0019    | Hải Phòng | +84886571503
+CH0020    | Hải Phòng | +84351126983
+
+[PASS] Q4 - YC4. Cua hang ton kho MH0001 > 100 tai ky 202512
+Rows returned: 20
+macuahang | diachivp                                           | thanhpho       | bang       | soluongtonkho
+----------+----------------------------------------------------+----------------+------------+--------------
+CH0150    | Văn phòng đại diện Mỹ Tho - Cửa hàng số 2          | Mỹ Tho         | Miền Nam   | 977          
+CH0126    | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 11 | TP Hồ Chí Minh | Miền Nam   | 963          
+CH0053    | Văn phòng đại diện Lào Cai - Cửa hàng số 2         | Lào Cai        | Miền Bắc   | 952          
+CH0098    | Văn phòng đại diện Quảng Ngãi - Cửa hàng số 1      | Quảng Ngãi     | Miền Trung | 947          
+CH0114    | Văn phòng đại diện Đà Lạt - Cửa hàng số 5          | Đà Lạt         | Miền Trung | 944          
+CH0124    | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 9  | TP Hồ Chí Minh | Miền Nam   | 941          
+CH0005    | Văn phòng đại diện Hà Nội - Cửa hàng số 5          | Hà Nội         | Miền Bắc   | 938          
+CH0009    | Văn phòng đại diện Hà Nội - Cửa hàng số 9          | Hà Nội         | Miền Bắc   | 912          
+CH0014    | Văn phòng đại diện Hải Phòng - Cửa hàng số 1       | Hải Phòng      | Miền Bắc   | 909          
+CH0090    | Văn phòng đại diện Đà Nẵng - Cửa hàng số 5         | Đà Nẵng        | Miền Trung | 908          
+CH0121    | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 6  | TP Hồ Chí Minh | Miền Nam   | 907          
+CH0038    | Văn phòng đại diện Ninh Bình - Cửa hàng số 2       | Ninh Bình      | Miền Bắc   | 898          
+CH0105    | Văn phòng đại diện Nha Trang - Cửa hàng số 4       | Nha Trang      | Miền Trung | 897          
+CH0077    | Văn phòng đại diện Hà Tĩnh - Cửa hàng số 3         | Hà Tĩnh        | Miền Trung | 893          
+CH0032    | Văn phòng đại diện Hải Dương - Cửa hàng số 2       | Hải Dương      | Miền Bắc   | 882          
+CH0052    | Văn phòng đại diện Lào Cai - Cửa hàng số 1         | Lào Cai        | Miền Bắc   | 879          
+CH0118    | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 3  | TP Hồ Chí Minh | Miền Nam   | 869          
+CH0013    | Văn phòng đại diện Hà Nội - Cửa hàng số 13         | Hà Nội         | Miền Bắc   | 854          
+CH0116    | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 1  | TP Hồ Chí Minh | Miền Nam   | 836          
+CH0127    | Văn phòng đại diện Biên Hòa - Cửa hàng số 1        | Biên Hòa       | Miền Nam   | 834          
+
+[PARTIAL] Q5 - YC5. Mat hang khach da mua va cac cua hang co ban mat hang do
+Note: Schema khong co bang don dat hang rieng. Query duoi day tra ve cac dong fact_sale va danh sach cua hang dang co ton mat hang tuong ung o ky moi nhat.
+Rows returned: 20
+makh    | tenkh           | mamh   | mota         | soluongban | cua_hang_khach_mua | cua_hang_con_ban | thanhpho 
+--------+-----------------+--------+--------------+------------+--------------------+------------------+----------
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0003           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0003           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0005           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0005           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0006           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0006           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0008           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0008           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0009           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0009           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0012           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0012           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0013           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0013           | Hà Nội   
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0014           | Hải Phòng
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0014           | Hải Phòng
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0018           | Hải Phòng
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0018           | Hải Phòng
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0003             | CH0020           | Hải Phòng
+KH00001 | Nam Mai Bảo Mai | MH0001 | Mat hang 001 | 5          | CH0137             | CH0020           | Hải Phòng
+
+[PASS] Q6 - YC6. Thanh pho va bang cua KH00001
+Rows returned: 1
+makh    | tenkh           | thanhpho | bang    
+--------+-----------------+----------+---------
+KH00001 | Nam Mai Bảo Mai | Hà Nội   | Miền Bắc
+
+[PASS] Q7 - YC7. Ton kho MH0010 tai cac cua hang o thanh pho Bắc Ninh ky 2025-12
+Rows returned: 3
+macuahang | thanhpho | sodienthoai  | mamh   | mota         | soluongtonkho
+----------+----------+--------------+--------+--------------+--------------
+CH0027    | Bắc Ninh | +84385571956 | MH0010 | Mat hang 010 | 392          
+CH0029    | Bắc Ninh | +84970885421 | MH0010 | Mat hang 010 | 784          
+CH0030    | Bắc Ninh | +84320754652 | MH0010 | Mat hang 010 | 372          
+
+[PARTIAL] Q8 - YC8. Mat hang, so luong, khach hang, cua hang, thanh pho cua mot dong ban hang
+Note: Schema hien tai chi co dong fact_sale, khong co order_id. Vi vay query nay kiem tra o muc dong ban hang thay vi muc don dat hang.
+Rows returned: 20
+mamh   | mota         | soluongban | makh    | tenkh           | macuahang | thanhpho
+-------+--------------+------------+---------+-----------------+-----------+---------
+MH0008 | Mat hang 008 | 1          | KH00001 | Nam Mai Bảo Mai | CH0001    | Hà Nội  
+MH0089 | Mat hang 089 | 7          | KH00001 | Nam Mai Bảo Mai | CH0001    | Hà Nội  
+MH0150 | Mat hang 150 | 5          | KH00001 | Nam Mai Bảo Mai | CH0001    | Hà Nội  
+MH0159 | Mat hang 159 | 1          | KH00001 | Nam Mai Bảo Mai | CH0001    | Hà Nội  
+MH0017 | Mat hang 017 | 3          | KH00001 | Nam Mai Bảo Mai | CH0002    | Hà Nội  
+MH0056 | Mat hang 056 | 6          | KH00001 | Nam Mai Bảo Mai | CH0002    | Hà Nội  
+MH0103 | Mat hang 103 | 6          | KH00001 | Nam Mai Bảo Mai | CH0002    | Hà Nội  
+MH0132 | Mat hang 132 | 5          | KH00001 | Nam Mai Bảo Mai | CH0002    | Hà Nội  
+MH0001 | Mat hang 001 | 5          | KH00001 | Nam Mai Bảo Mai | CH0003    | Hà Nội  
+MH0011 | Mat hang 011 | 8          | KH00001 | Nam Mai Bảo Mai | CH0003    | Hà Nội  
+MH0063 | Mat hang 063 | 5          | KH00001 | Nam Mai Bảo Mai | CH0003    | Hà Nội  
+MH0077 | Mat hang 077 | 4          | KH00001 | Nam Mai Bảo Mai | CH0003    | Hà Nội  
+MH0035 | Mat hang 035 | 8          | KH00001 | Nam Mai Bảo Mai | CH0004    | Hà Nội  
+MH0049 | Mat hang 049 | 1          | KH00001 | Nam Mai Bảo Mai | CH0004    | Hà Nội  
+MH0160 | Mat hang 160 | 5          | KH00001 | Nam Mai Bảo Mai | CH0004    | Hà Nội  
+MH0140 | Mat hang 140 | 7          | KH00001 | Nam Mai Bảo Mai | CH0005    | Hà Nội  
+MH0010 | Mat hang 010 | 7          | KH00001 | Nam Mai Bảo Mai | CH0006    | Hà Nội  
+MH0021 | Mat hang 021 | 7          | KH00001 | Nam Mai Bảo Mai | CH0006    | Hà Nội  
+MH0033 | Mat hang 033 | 6          | KH00001 | Nam Mai Bảo Mai | CH0006    | Hà Nội  
+MH0098 | Mat hang 098 | 1          | KH00001 | Nam Mai Bảo Mai | CH0006    | Hà Nội  
+
+[PASS] Q9a - YC9a. Khach hang du lich
+Rows returned: 20
+makh    | tenkh             | thanhpho       | bang      
+--------+-------------------+----------------+-----------
+KH00001 | Nam Mai Bảo Mai   | Hà Nội         | Miền Bắc  
+KH00002 | Anh Nam Phạm      | Hải Dương      | Miền Bắc  
+KH00003 | Tùng Phạm         | Quảng Ninh     | Miền Bắc  
+KH00004 | Quý cô Vi Nguyễn  | Bắc Ninh       | Miền Bắc  
+KH00005 | Huy Tấn Phạm      | Hà Nội         | Miền Bắc  
+KH00006 | Ngọc Mai          | Lạng Sơn       | Miền Bắc  
+KH00007 | Nhật Mai Bảo Đặng | Bắc Ninh       | Miền Bắc  
+KH00008 | Vũ Trí Mai        | Lào Cai        | Miền Bắc  
+KH00021 | Phúc Bảo Nguyễn   | Hải Phòng      | Miền Bắc  
+KH00022 | Ánh Trần          | Thái Nguyên    | Miền Bắc  
+KH00023 | Quang Xuân Nguyễn | Thanh Hóa      | Miền Trung
+KH00024 | Phương Bảo Phạm   | Biên Hòa       | Miền Nam  
+KH00025 | Anh Thành Đặng    | Thủ Dầu Một    | Miền Nam  
+KH00026 | Lâm Bảo Đặng      | Bắc Ninh       | Miền Bắc  
+KH00027 | Linh Nguyễn       | Đà Lạt         | Miền Trung
+KH00028 | Trọng Mai Lê      | Đà Nẵng        | Miền Trung
+KH00041 | Ông Quang Phạm    | Đà Lạt         | Miền Trung
+KH00042 | Bảo Phạm          | Biên Hòa       | Miền Nam  
+KH00043 | Bà Kim Phạm       | Bắc Ninh       | Miền Bắc  
+KH00044 | Bà Lâm Vũ         | TP Hồ Chí Minh | Miền Nam  
+
+[PASS] Q9b - YC9b. Khach hang buu dien
+Rows returned: 20
+makh    | tenkh              | thanhpho       | bang      
+--------+--------------------+----------------+-----------
+KH00009 | Cô Hương Hoàng     | Huế            | Miền Trung
+KH00010 | Chị Thành Mai      | Quảng Ninh     | Miền Bắc  
+KH00011 | Bà Ánh Vũ          | Hải Phòng      | Miền Bắc  
+KH00012 | Chị Ánh Lê         | Quy Nhơn       | Miền Trung
+KH00013 | Hương Phạm         | Cần Thơ        | Miền Nam  
+KH00014 | Cô Thành Đặng      | Phan Rang      | Miền Trung
+KH00015 | Minh Phạm          | Tam Kỳ         | Miền Trung
+KH00016 | Anh Trọng Bùi      | Vinh           | Miền Trung
+KH00029 | Quý cô Yến Nguyễn  | Hà Nội         | Miền Bắc  
+KH00030 | Ngọc Lê            | Hải Dương      | Miền Bắc  
+KH00031 | Anh Tùng Đặng      | Cần Thơ        | Miền Nam  
+KH00032 | Linh Hoàng         | Hải Phòng      | Miền Bắc  
+KH00033 | Duyên Vũ           | Thủ Dầu Một    | Miền Nam  
+KH00034 | Hà Nguyễn          | Phan Rang      | Miền Trung
+KH00035 | Quý cô Lan Đặng    | Quy Nhơn       | Miền Trung
+KH00036 | Nhật Mai Bảo Hoàng | TP Hồ Chí Minh | Miền Nam  
+KH00049 | Khoa Mai Lê        | Vinh           | Miền Trung
+KH00050 | Khoa Đức Bùi       | Thái Nguyên    | Miền Bắc  
+KH00051 | Cô Lan Lê          | Nha Trang      | Miền Trung
+KH00052 | Vi Lê              | Lạng Sơn       | Miền Bắc  
+
+[PASS] Q9c - YC9c. Khach hang ca hai
+Rows returned: 20
+makh    | tenkh              | thanhpho       | bang      
+--------+--------------------+----------------+-----------
+KH00017 | Tùng Hoàng         | Mỹ Tho         | Miền Nam  
+KH00018 | Ánh Mai            | Cần Thơ        | Miền Nam  
+KH00019 | Bà Hạnh Hoàng      | TP Hồ Chí Minh | Miền Nam  
+KH00020 | Thảo Lê            | Cần Thơ        | Miền Nam  
+KH00037 | Bảo Hoàng          | Sóc Trăng      | Miền Nam  
+KH00038 | Nhật Vũ            | Rạch Giá       | Miền Nam  
+KH00039 | Anh Hoàng Vũ       | Tam Kỳ         | Miền Trung
+KH00040 | Bác Quang Nguyễn   | Hải Phòng      | Miền Bắc  
+KH00057 | Quý ông Nhiên Trần | Biên Hòa       | Miền Nam  
+KH00058 | Khoa Bảo Trần      | Bắc Ninh       | Miền Bắc  
+KH00059 | Xuân Phạm          | Nam Định       | Miền Bắc  
+KH00060 | Hà Trần            | Thanh Hóa      | Miền Trung
+KH00077 | Hạnh Hoàng         | Mỹ Tho         | Miền Nam  
+KH00078 | Nhiên Văn Lê       | TP Hồ Chí Minh | Miền Nam  
+KH00079 | Chị Nhật Phạm      | Huế            | Miền Trung
+KH00080 | Cô Hạnh Mai        | Nha Trang      | Miền Trung
+KH00097 | Quý cô Lâm Phạm    | Hải Phòng      | Miền Bắc  
+KH00098 | Hà Phạm            | Cần Thơ        | Miền Nam  
+KH00099 | Quang Phú Mai      | Mỹ Tho         | Miền Nam  
+KH00100 | Kim Dương          | Lạng Sơn       | Miền Bắc  

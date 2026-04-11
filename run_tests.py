@@ -125,10 +125,10 @@ run("A11b. inventory: ton kho am (expect 0)", """
 SELECT COUNT(*) AS cnt FROM dw.fact_inventory_snapshot WHERE soluongtonkho < 0
 """)
 
-run("A12. tongtien != gia * soluongban (expect 0)", """
-SELECT COUNT(*) AS cnt FROM dw.fact_sale fs
-JOIN dw.dim_product dp ON fs.productkey = dp.productkey
-WHERE fs.tongtien != dp.gia * fs.soluongban
+run("A12. Don gia ban suy ra tu fact_sale phai duong (expect 0)", """
+SELECT COUNT(*) AS cnt
+FROM dw.fact_sale
+WHERE CAST(tongtien AS DECIMAL(18,4)) / NULLIF(soluongban, 0) <= 0
 """)
 
 run("A13. Cap (store,product) thieu snapshot (expect 0 rows)", """
@@ -152,12 +152,29 @@ out.append("SECTION B: BUSINESS REQUIREMENT QUERIES")
 out.append("=" * 80)
 out.append("")
 
-run("Req1. Cua hang + mat hang luu kho (TOP 15)", """
-SELECT DISTINCT TOP 15 ds.macuahang, ds.thanhpho, ds.bang, ds.sodienthoai,
-    dp.mamh, dp.mota, dp.kichco, dp.trongluong, dp.gia
-FROM dw.fact_inventory_snapshot fi
-JOIN dw.dim_store ds ON fi.storekey = ds.storekey
-JOIN dw.dim_product dp ON fi.productkey = dp.productkey
+run("Req1. Cua hang + mat hang da ban + don gia ban binh quan (TOP 15)", """
+SELECT TOP 15
+    ds.macuahang,
+    ds.thanhpho,
+    ds.bang,
+    ds.sodienthoai,
+    dp.mamh,
+    dp.mota,
+    dp.kichco,
+    dp.trongluong,
+    CAST(AVG(CAST(fs.tongtien AS DECIMAL(18,2)) / NULLIF(fs.soluongban, 0)) AS DECIMAL(18,2)) AS don_gia_binh_quan
+FROM dw.fact_sale fs
+JOIN dw.dim_store ds ON fs.storekey = ds.storekey
+JOIN dw.dim_product dp ON fs.productkey = dp.productkey
+GROUP BY
+    ds.macuahang,
+    ds.thanhpho,
+    ds.bang,
+    ds.sodienthoai,
+    dp.mamh,
+    dp.mota,
+    dp.kichco,
+    dp.trongluong
 ORDER BY ds.macuahang, dp.mamh
 """)
 

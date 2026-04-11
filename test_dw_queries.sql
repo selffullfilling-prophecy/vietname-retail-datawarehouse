@@ -190,21 +190,19 @@ WHERE soluongtonkho < 0;
 GO
 
 -- ----------------------------------------------------------------------------
--- A12. Check tongtien = gia * soluongban
--- Expected: 0 rows (no mismatches)
+-- A12. Check derived unit sale price is positive
+-- Expected: 0 rows
 -- ----------------------------------------------------------------------------
 SELECT
-    fs.productkey,
-    fs.timekey,
-    fs.storekey,
-    fs.customerkey,
-    fs.soluongban,
-    fs.tongtien,
-    dp.gia,
-    dp.gia * fs.soluongban AS expected_tongtien
-FROM dw.fact_sale fs
-JOIN dw.dim_product dp ON fs.productkey = dp.productkey
-WHERE fs.tongtien != dp.gia * fs.soluongban;
+    productkey,
+    timekey,
+    storekey,
+    customerkey,
+    soluongban,
+    tongtien,
+    CAST(tongtien AS DECIMAL(18,4)) / NULLIF(soluongban, 0) AS don_gia_suy_ra
+FROM dw.fact_sale
+WHERE CAST(tongtien AS DECIMAL(18,4)) / NULLIF(soluongban, 0) <= 0;
 GO
 
 -- ----------------------------------------------------------------------------
@@ -245,10 +243,9 @@ GO
 
 -- ----------------------------------------------------------------------------
 -- Requirement 1: Find all stores with city, bang, phone, and description,
---                size, weight, price of all products stocked there.
---                Use fact_inventory_snapshot for store-product relationship.
+--                size, weight, and average sale unit price of products sold there.
 -- ----------------------------------------------------------------------------
-SELECT DISTINCT
+SELECT
     ds.macuahang,
     ds.thanhpho,
     ds.bang,
@@ -257,10 +254,19 @@ SELECT DISTINCT
     dp.mota,
     dp.kichco,
     dp.trongluong,
-    dp.gia
-FROM dw.fact_inventory_snapshot fi
-JOIN dw.dim_store   ds ON fi.storekey   = ds.storekey
-JOIN dw.dim_product dp ON fi.productkey = dp.productkey
+    CAST(AVG(CAST(fs.tongtien AS DECIMAL(18,2)) / NULLIF(fs.soluongban, 0)) AS DECIMAL(18,2)) AS don_gia_binh_quan
+FROM dw.fact_sale fs
+JOIN dw.dim_store   ds ON fs.storekey   = ds.storekey
+JOIN dw.dim_product dp ON fs.productkey = dp.productkey
+GROUP BY
+    ds.macuahang,
+    ds.thanhpho,
+    ds.bang,
+    ds.sodienthoai,
+    dp.mamh,
+    dp.mota,
+    dp.kichco,
+    dp.trongluong
 ORDER BY ds.macuahang, dp.mamh;
 GO
 

@@ -12,6 +12,8 @@ Nguyen tac:
   + Khach hang thuoc it nhat mot trong hai loai: du lich / buu dien.
   + Chi phat sinh ban hang cho cac mat hang ma cua hang co luu tru.
   + Inventory snapshot luu so luong ton kho theo thang.
+- Don gia khong luu trong dim_product. Gia ban duoc the hien gian tiep
+  qua fact_sale.tongtien / fact_sale.soluongban.
 - Khong dua MucDoTonKho vao fact. Measure vat ly cua inventory chi la SoLuongTonKho.
 - Time dimension theo thang, kho co 2 nam du lieu (24 thang).
 """
@@ -129,17 +131,50 @@ def _city_weight_arrays() -> Tuple[List[Tuple[str, str]], List[int]]:
     return city_region_pairs, weights
 
 
-def gen_dim_product(cfg: Config, rnd: random.Random) -> List[Tuple[int, str, str, str, Decimal, Decimal]]:
-    rows: List[Tuple[int, str, str, str, Decimal, Decimal]] = []
+def gen_dim_product(cfg: Config, rnd: random.Random) -> List[Tuple[int, str, str, str, Decimal]]:
+    rows: List[Tuple[int, str, str, str, Decimal]] = []
     for i in range(1, cfg.num_products + 1):
         productkey = i
         mamh = f"MH{i:04d}"
         mota = f"Mặt hàng {i:03d}"
         kichco = SIZE_VALUES[(i - 1) % len(SIZE_VALUES)]
         trongluong = decimal2(round(rnd.uniform(0.10, 5.00), 2))
-        gia = decimal2(rnd.randint(20, 500) * 1000)
-        rows.append((productkey, mamh, mota, kichco, trongluong, gia))
+        rows.append((productkey, mamh, mota, kichco, trongluong))
     return rows
+
+
+def build_product_year_price_book(
+    time_rows: Sequence[Tuple[int, int, int, int]],
+    product_rows: Sequence[Tuple[int, str, str, str, Decimal]],
+    rnd: random.Random,
+) -> Dict[Tuple[int, int], Decimal]:
+    productkeys = [row[0] for row in product_rows]
+    years = sorted({row[3] for row in time_rows})
+
+    base_price_by_product = {
+        productkey: decimal2(rnd.randint(20, 500) * 1000)
+        for productkey in productkeys
+    }
+    price_book: Dict[Tuple[int, int], Decimal] = {}
+
+    first_year = years[0]
+    for productkey in productkeys:
+        price_book[(first_year, productkey)] = base_price_by_product[productkey]
+
+    for year in years[1:]:
+        changed_count = max(1, int(round(len(productkeys) * 0.14)))
+        changed_products = set(rnd.sample(productkeys, changed_count))
+        for productkey in productkeys:
+            prev_price = price_book[(year - 1, productkey)]
+            if productkey in changed_products:
+                direction = -1 if rnd.random() < 0.55 else 1
+                delta_pct = rnd.uniform(0.03, 0.12)
+                factor = Decimal(str(1 + (direction * delta_pct)))
+                price_book[(year, productkey)] = decimal2(prev_price * factor)
+            else:
+                price_book[(year, productkey)] = prev_price
+
+    return price_book
 
 
 def gen_dim_customer(cfg: Config, rnd: random.Random, fake: Faker) -> List[Tuple[int, str, str, str, str, int, int]]:
@@ -270,13 +305,13 @@ def build_store_product_map(
 def gen_fact_sale(
     cfg: Config,
     time_rows: Sequence[Tuple[int, int, int, int]],
-    product_rows: Sequence[Tuple[int, str, str, str, Decimal, Decimal]],
+    product_rows: Sequence[Tuple[int, str, str, str, Decimal]],
     customer_rows: Sequence[Tuple[int, str, str, str, str, int, int]],
     store_rows: Sequence[Tuple[int, str, str, str, str, str]],
     store_product_map: Dict[int, Set[int]],
+    product_year_price_book: Dict[Tuple[int, int], Decimal],
     rnd: random.Random,
 ) -> List[Tuple[int, int, int, int, int, Decimal]]:
-    product_price = {row[0]: row[5] for row in product_rows}
     customer_keys = [row[0] for row in customer_rows]
 
     city_to_customer_keys: Dict[str, List[int]] = defaultdict(list)
@@ -286,7 +321,7 @@ def gen_fact_sale(
     sale_rows: List[Tuple[int, int, int, int, int, Decimal]] = []
     used_keys: Set[Tuple[int, int, int, int]] = set()
 
-    for timekey, _thang, _quy, _nam in time_rows:
+    for timekey, _thang, _quy, nam in time_rows:
         for storekey, _macuahang, _phone, store_city, _region, _vp in store_rows:
             available_products = list(store_product_map[storekey])
             if not available_products:
@@ -325,7 +360,8 @@ def gen_fact_sale(
                 used_keys.add(natural_key)
 
                 qty = rnd.randint(cfg.sale_qty_min, cfg.sale_qty_max)
-                amount = Decimal(product_price[productkey] * qty).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                unit_price = product_year_price_book[(nam, productkey)]
+                amount = Decimal(unit_price * qty).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
                 sale_rows.append((productkey, timekey, storekey, customerkey, qty, amount))
 
     return sale_rows
@@ -386,16 +422,26 @@ def seed_all(conn, cfg: Config) -> None:
     product_rows = gen_dim_product(cfg, rnd)
     customer_rows = gen_dim_customer(cfg, rnd, fake)
     store_rows = gen_dim_store(cfg, rnd)
+    product_year_price_book = build_product_year_price_book(time_rows, product_rows, rnd)
 
     store_product_map = build_store_product_map(cfg, store_rows, product_rows, rnd)
-    sale_rows = gen_fact_sale(cfg, time_rows, product_rows, customer_rows, store_rows, store_product_map, rnd)
+    sale_rows = gen_fact_sale(
+        cfg,
+        time_rows,
+        product_rows,
+        customer_rows,
+        store_rows,
+        store_product_map,
+        product_year_price_book,
+        rnd,
+    )
     sales_by_store_product_month = aggregate_monthly_sales(sale_rows)
     inventory_rows = gen_fact_inventory_snapshot(cfg, time_rows, store_rows, store_product_map, sales_by_store_product_month, rnd)
 
     cur = conn.cursor()
 
     insert_many(cur, f"{SCHEMA}.dim_time", "timekey, thang, quy, nam", time_rows, "?, ?, ?, ?")
-    insert_many(cur, f"{SCHEMA}.dim_product", "productkey, mamh, mota, kichco, trongluong, gia", product_rows, "?, ?, ?, ?, ?, ?")
+    insert_many(cur, f"{SCHEMA}.dim_product", "productkey, mamh, mota, kichco, trongluong", product_rows, "?, ?, ?, ?, ?")
     insert_many(cur, f"{SCHEMA}.dim_customer", "customerkey, makh, tenkh, thanhpho, bang, iskhdulich, iskhbuudien", customer_rows, "?, ?, ?, ?, ?, ?, ?")
     insert_many(cur, f"{SCHEMA}.dim_store", "storekey, macuahang, sodienthoai, thanhpho, bang, diachivp", store_rows, "?, ?, ?, ?, ?, ?")
     insert_many(cur, f"{SCHEMA}.fact_sale", "productkey, timekey, storekey, customerkey, soluongban, tongtien", sale_rows, "?, ?, ?, ?, ?, ?")
