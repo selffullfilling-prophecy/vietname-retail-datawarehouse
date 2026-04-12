@@ -7,8 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<SsasOptions>(
     builder.Configuration.GetSection(SsasOptions.SectionName));
 
+var ssasDataSource = builder.Configuration["Ssas:DataSource"] ?? string.Empty;
+var ssasCatalog = builder.Configuration["Ssas:Catalog"] ?? string.Empty;
+
 builder.Services.AddAnalyticsApplication();
-builder.Services.AddSsasServices();
+builder.Services.AddSsasServices(ssasDataSource, ssasCatalog);
 
 builder.Services.AddCors(options =>
 {
@@ -33,7 +36,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseCors("WebClient");
 app.UseAuthorization();
 app.MapControllers();
