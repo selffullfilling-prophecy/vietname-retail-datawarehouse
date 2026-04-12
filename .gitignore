@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+node_modules/
+dist/
+apps/**/bin/
+apps/**/obj/
+apps/web/node_modules/
+apps/web/dist/
