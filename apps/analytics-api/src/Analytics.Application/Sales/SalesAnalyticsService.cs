@@ -34,9 +34,9 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             Rows: result.Rows);
     }
 
-    public SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year)
     {
-        var result = _salesAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName);
+        var result = _salesAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year);
 
         return new SalesStoreBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,

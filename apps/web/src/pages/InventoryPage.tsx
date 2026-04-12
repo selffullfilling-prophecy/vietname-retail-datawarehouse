@@ -10,6 +10,8 @@ import {
   type YearInventorySummaryResponse,
 } from "../services/api";
 
+type PivotOrientation = "rows-years" | "rows-states";
+
 export function InventoryPage() {
   const [summary, setSummary] = useState<YearInventorySummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -20,6 +22,12 @@ export function InventoryPage() {
   const [storeBreakdown, setStoreBreakdown] = useState<InventoryStoreBreakdownResponse | null>(null);
   const [storeBreakdownLoading, setStoreBreakdownLoading] = useState(true);
   const [storeBreakdownError, setStoreBreakdownError] = useState<string | null>(null);
+  const [pivotSnapshots, setPivotSnapshots] = useState<Record<string, InventoryStoreBreakdownResponse["rows"]>>({});
+  const [pivotLoading, setPivotLoading] = useState(true);
+  const [pivotError, setPivotError] = useState<string | null>(null);
+  const [pivotOrientation, setPivotOrientation] = useState<PivotOrientation>("rows-years");
+  const [selectedPivotYears, setSelectedPivotYears] = useState<string[]>([]);
+  const [selectedPivotStates, setSelectedPivotStates] = useState<string[]>([]);
   const [drillState, setDrillState] = useState<{
     level: "year" | "quarter" | "month";
     year?: string;
@@ -148,6 +156,56 @@ export function InventoryPage() {
     };
   }, [storeDrillState]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPivotSnapshots() {
+      if (!summary?.rows.length) {
+        return;
+      }
+
+      try {
+        setPivotLoading(true);
+        setPivotError(null);
+
+        const responses = await Promise.all(
+          summary.rows.map(async (row) => ({
+            year: row.year,
+            response: await getInventoryStoreBreakdown("state", undefined, undefined, row.year),
+          })),
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextSnapshots: Record<string, InventoryStoreBreakdownResponse["rows"]> = {};
+        for (const item of responses) {
+          nextSnapshots[item.year] = item.response.rows;
+        }
+
+        setPivotSnapshots(nextSnapshots);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Unknown inventory slice/dice error.";
+        setPivotError(message);
+      } finally {
+        if (isMounted) {
+          setPivotLoading(false);
+        }
+      }
+    }
+
+    void loadPivotSnapshots();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [summary]);
+
   const totalAverageInventory = useMemo(
     () => summary?.rows.reduce((sum, row) => sum + row.averageInventory, 0) ?? 0,
     [summary],
@@ -159,9 +217,78 @@ export function InventoryPage() {
 
     return [...summary.rows].sort((left, right) => right.averageInventory - left.averageInventory)[0];
   }, [summary]);
+  const availableYears = summary?.rows.map((row) => row.year) ?? [];
+  const availableStates = useMemo(() => {
+    const labels = new Set<string>();
+
+    Object.values(pivotSnapshots).forEach((rows) => {
+      rows.forEach((row) => labels.add(row.label));
+    });
+
+    return [...labels];
+  }, [pivotSnapshots]);
+
+  useEffect(() => {
+    if (!availableYears.length) {
+      return;
+    }
+
+    setSelectedPivotYears((previous) => {
+      if (!previous.length) {
+        return availableYears;
+      }
+
+      return previous.filter((year) => availableYears.includes(year));
+    });
+  }, [availableYears]);
+
+  useEffect(() => {
+    if (!availableStates.length) {
+      return;
+    }
+
+    setSelectedPivotStates((previous) => {
+      if (!previous.length) {
+        return availableStates;
+      }
+
+      return previous.filter((state) => availableStates.includes(state));
+    });
+  }, [availableStates]);
+
+  const pivotValueByYearState = useMemo(() => {
+    const values = new Map<string, number>();
+
+    Object.entries(pivotSnapshots).forEach(([year, rows]) => {
+      rows.forEach((row) => {
+        values.set(`${year}::${row.label}`, row.averageInventory);
+      });
+    });
+
+    return values;
+  }, [pivotSnapshots]);
+
+  const filteredPivotYears = selectedPivotYears.length ? selectedPivotYears : availableYears;
+  const filteredPivotStates = selectedPivotStates.length ? selectedPivotStates : availableStates;
+  const pivotColumnLabels = pivotOrientation === "rows-years" ? filteredPivotStates : filteredPivotYears;
+  const pivotRowLabels = pivotOrientation === "rows-years" ? filteredPivotYears : filteredPivotStates;
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+  }
+
+  function toggleItem(currentItems: string[], nextItem: string, allItems: string[], setter: (items: string[]) => void) {
+    if (currentItems.length === 1 && currentItems[0] === nextItem) {
+      return;
+    }
+
+    if (currentItems.includes(nextItem)) {
+      const nextItems = currentItems.filter((item) => item !== nextItem);
+      setter(nextItems.length ? nextItems : [nextItem]);
+      return;
+    }
+
+    setter([...currentItems, nextItem]);
   }
 
   function handleDrillDown(key: string) {
@@ -245,6 +372,10 @@ export function InventoryPage() {
     }
   }
 
+  function getPivotValue(year: string, state: string): number {
+    return pivotValueByYearState.get(`${year}::${state}`) ?? 0;
+  }
+
   return (
     <div className="page-stack">
       <header className="page-header">
@@ -252,7 +383,7 @@ export function InventoryPage() {
           <p className="eyebrow">Inventory Analysis</p>
           <h2>Average inventory monitoring</h2>
           <p className="muted">
-            Inventory will use the SSAS semi-additive measure and a guided UI so executives do not misread time roll-ups.
+            Inventory now supports drill-down, slice/dice, and guided pivoting while keeping the semi-additive wording explicit.
           </p>
         </div>
       </header>
@@ -270,7 +401,7 @@ export function InventoryPage() {
         />
         <KpiCard
           label="Years returned"
-          value={String(summary?.rows.length ?? 0)}
+          value={String(availableYears.length)}
           hint="Number of year members returned by the current MDX query."
         />
       </div>
@@ -387,17 +518,6 @@ export function InventoryPage() {
         )}
       </SectionCard>
 
-      <SectionCard
-        title="Planned interactions"
-        description="This page is designed around the current InventoryCube aggregate function AverageOfChildren."
-      >
-        <ul className="flat-list">
-          <li>Show average inventory clearly, not ending inventory.</li>
-          <li>Filter by product code, city, store, year, quarter, and month.</li>
-          <li>Drill from region to city to store for stock investigation.</li>
-        </ul>
-      </SectionCard>
-
       {storeBreakdownError ? (
         <section className="status-panel error-panel">
           <strong>Inventory store drill-down failed</strong>
@@ -473,6 +593,117 @@ export function InventoryPage() {
                     </td>
                   </tr>
                 )) ?? null}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      {pivotError ? (
+        <section className="status-panel error-panel">
+          <strong>Inventory slice/dice failed</strong>
+          <p>{pivotError}</p>
+          <p className="muted">This pivot section reuses year-filtered Bang breakdowns, so failures usually mean one of those state-level queries is down.</p>
+        </section>
+      ) : null}
+
+      <SectionCard
+        title="Guided slice, dice, and pivot"
+        description="This cross-tab lets you filter years and Bang, then swap rows and columns without changing the underlying inventory cube logic."
+      >
+        <div className="filter-toolbar">
+          <div className="filter-group">
+            <p className="detail-label">Pivot</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() =>
+                  setPivotOrientation((current) =>
+                    current === "rows-years" ? "rows-states" : "rows-years",
+                  )}
+              >
+                Swap rows / columns
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="filter-toolbar">
+          <div className="filter-group">
+            <p className="detail-label">Slice by year</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className={`filter-pill ${selectedPivotYears.length === availableYears.length ? "filter-pill-active" : ""}`}
+                onClick={() => setSelectedPivotYears(availableYears)}
+              >
+                All years
+              </button>
+              {availableYears.map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  className={`filter-pill ${selectedPivotYears.includes(year) ? "filter-pill-active" : ""}`}
+                  onClick={() => toggleItem(selectedPivotYears, year, availableYears, setSelectedPivotYears)}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <p className="detail-label">Dice by Bang</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className={`filter-pill ${selectedPivotStates.length === availableStates.length ? "filter-pill-active" : ""}`}
+                onClick={() => setSelectedPivotStates(availableStates)}
+              >
+                All Bang
+              </button>
+              {availableStates.map((state) => (
+                <button
+                  key={state}
+                  type="button"
+                  className={`filter-pill ${selectedPivotStates.includes(state) ? "filter-pill-active" : ""}`}
+                  onClick={() => toggleItem(selectedPivotStates, state, availableStates, setSelectedPivotStates)}
+                >
+                  {state}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {pivotLoading ? (
+          <p className="muted">Loading pivot source rows from state-level yearly slices...</p>
+        ) : (
+          <div className="data-table-shell">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{pivotOrientation === "rows-years" ? "Year" : "Bang"}</th>
+                  {pivotColumnLabels.map((label) => (
+                    <th key={label}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pivotRowLabels.map((rowLabel) => (
+                  <tr key={rowLabel}>
+                    <td>{rowLabel}</td>
+                    {pivotColumnLabels.map((columnLabel) => {
+                      const value =
+                        pivotOrientation === "rows-years"
+                          ? getPivotValue(rowLabel, columnLabel)
+                          : getPivotValue(columnLabel, rowLabel);
+
+                      return <td key={`${rowLabel}-${columnLabel}`}>{formatNumber(value)}</td>;
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

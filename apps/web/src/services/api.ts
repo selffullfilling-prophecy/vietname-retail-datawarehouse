@@ -158,6 +158,7 @@ export async function getSalesStoreBreakdown(
   level: "state" | "city" | "store",
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
+  year?: string,
 ): Promise<SalesStoreBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (stateMemberUniqueName) {
@@ -165,6 +166,9 @@ export async function getSalesStoreBreakdown(
   }
   if (cityMemberUniqueName) {
     params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (year) {
+    params.set("year", year);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/sales/store-breakdown?${params.toString()}`);
@@ -209,6 +213,7 @@ export async function getInventoryStoreBreakdown(
   level: "state" | "city" | "store",
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
+  year?: string,
 ): Promise<InventoryStoreBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (stateMemberUniqueName) {
@@ -216,6 +221,9 @@ export async function getInventoryStoreBreakdown(
   }
   if (cityMemberUniqueName) {
     params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (year) {
+    params.set("year", year);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/inventory/store-breakdown?${params.toString()}`);

@@ -258,6 +258,22 @@ a {
   flex-wrap: wrap;
 }
 
+.filter-toolbar {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+
 .breadcrumb-row {
   display: flex;
   gap: 10px;
@@ -267,7 +283,8 @@ a {
 
 .breadcrumb-button,
 .secondary-button,
-.breadcrumb-chip {
+.breadcrumb-chip,
+.filter-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -277,7 +294,8 @@ a {
 }
 
 .breadcrumb-button,
-.secondary-button {
+.secondary-button,
+.filter-pill {
   border: 1px solid rgba(16, 33, 53, 0.12);
   background: #ffffff;
   color: #132238;
@@ -293,6 +311,12 @@ a {
 .breadcrumb-chip {
   background: rgba(16, 33, 53, 0.08);
   color: #22344a;
+}
+
+.filter-pill-active {
+  background: rgba(255, 209, 102, 0.24);
+  border-color: rgba(255, 140, 66, 0.4);
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {

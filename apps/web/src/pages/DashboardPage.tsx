@@ -23,6 +23,7 @@ export function DashboardPage() {
   const [inventorySummary, setInventorySummary] = useState<YearInventorySummaryResponse | null>(null);
   const [salesStates, setSalesStates] = useState<SalesStoreBreakdownResponse | null>(null);
   const [inventoryStates, setInventoryStates] = useState<InventoryStoreBreakdownResponse | null>(null);
+  const [selectedExecutiveYear, setSelectedExecutiveYear] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,15 +40,11 @@ export function DashboardPage() {
           metadataResponse,
           salesSummaryResponse,
           inventorySummaryResponse,
-          salesStatesResponse,
-          inventoryStatesResponse,
         ] = await Promise.all([
           getHealth(),
           getMetadataOverview(),
           getSalesSummaryByYear(),
           getInventorySummaryByYear(),
-          getSalesStoreBreakdown("state"),
-          getInventoryStoreBreakdown("state"),
         ]);
 
         if (!isMounted) {
@@ -58,8 +55,6 @@ export function DashboardPage() {
         setMetadata(metadataResponse);
         setSalesSummary(salesSummaryResponse);
         setInventorySummary(inventorySummaryResponse);
-        setSalesStates(salesStatesResponse);
-        setInventoryStates(inventoryStatesResponse);
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -81,10 +76,57 @@ export function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedExecutiveYear !== "all" || !salesSummary?.rows.length) {
+      return;
+    }
+
+    setSelectedExecutiveYear(salesSummary.rows.at(-1)?.year ?? "all");
+  }, [salesSummary, selectedExecutiveYear]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadExecutiveBreakdowns() {
+      if (!salesSummary?.rows.length) {
+        return;
+      }
+
+      try {
+        const yearFilter = selectedExecutiveYear === "all" ? undefined : selectedExecutiveYear;
+        const [salesStatesResponse, inventoryStatesResponse] = await Promise.all([
+          getSalesStoreBreakdown("state", undefined, undefined, yearFilter),
+          getInventoryStoreBreakdown("state", undefined, undefined, yearFilter),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSalesStates(salesStatesResponse);
+        setInventoryStates(inventoryStatesResponse);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Unknown executive filter error.";
+        setError(message);
+      }
+    }
+
+    void loadExecutiveBreakdowns();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [salesSummary, selectedExecutiveYear]);
+
   const cubeCount = metadata?.cubes.length ?? 0;
   const latestSalesYear = salesSummary?.rows.at(-1) ?? null;
   const previousSalesYear = salesSummary?.rows.at(-2) ?? null;
   const latestInventoryYear = inventorySummary?.rows.at(-1) ?? null;
+  const executiveYears = salesSummary?.rows.map((row) => row.year) ?? [];
   const totalRevenue = salesSummary?.rows.reduce((sum, row) => sum + row.revenue, 0) ?? 0;
   const totalSalesVolume = salesSummary?.rows.reduce((sum, row) => sum + row.salesVolume, 0) ?? 0;
   const averageInventoryAcrossYears = inventorySummary?.rows.length
@@ -119,6 +161,28 @@ export function DashboardPage() {
     () => [...(inventoryStates?.rows ?? [])].sort((left, right) => right.averageInventory - left.averageInventory).slice(0, 5),
     [inventoryStates],
   );
+  const selectedSalesYear = useMemo(() => {
+    if (!salesSummary?.rows.length) {
+      return null;
+    }
+
+    if (selectedExecutiveYear === "all") {
+      return latestSalesYear;
+    }
+
+    return salesSummary.rows.find((row) => row.year === selectedExecutiveYear) ?? null;
+  }, [latestSalesYear, salesSummary, selectedExecutiveYear]);
+  const selectedInventoryYear = useMemo(() => {
+    if (!inventorySummary?.rows.length) {
+      return null;
+    }
+
+    if (selectedExecutiveYear === "all") {
+      return latestInventoryYear;
+    }
+
+    return inventorySummary.rows.find((row) => row.year === selectedExecutiveYear) ?? null;
+  }, [inventorySummary, latestInventoryYear, selectedExecutiveYear]);
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
@@ -189,6 +253,28 @@ export function DashboardPage() {
         title="Executive pulse"
         description="This section keeps the current operating picture small and readable before we drill into specific cubes."
       >
+        <div className="drill-toolbar">
+          <div className="breadcrumb-row">
+            <button
+              type="button"
+              className={`breadcrumb-button ${selectedExecutiveYear === "all" ? "breadcrumb-button-active" : ""}`}
+              onClick={() => setSelectedExecutiveYear("all")}
+            >
+              All years
+            </button>
+            {executiveYears.map((year) => (
+              <button
+                key={year}
+                type="button"
+                className={`breadcrumb-button ${selectedExecutiveYear === year ? "breadcrumb-button-active" : ""}`}
+                onClick={() => setSelectedExecutiveYear(year)}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="detail-grid">
           <div>
             <p className="detail-label">Service status</p>
@@ -199,16 +285,24 @@ export function DashboardPage() {
             </p>
           </div>
           <div>
-            <p className="detail-label">Latest revenue year</p>
-            <p className="detail-value">{latestSalesYear ? `${latestSalesYear.year} · ${formatNumber(latestSalesYear.revenue)}` : "--"}</p>
+            <p className="detail-label">{selectedExecutiveYear === "all" ? "Latest revenue year" : "Selected year revenue"}</p>
+            <p className="detail-value">{selectedSalesYear ? `${selectedSalesYear.year} · ${formatNumber(selectedSalesYear.revenue)}` : "--"}</p>
           </div>
           <div>
             <p className="detail-label">Top revenue state</p>
             <p className="detail-value">{topRevenueState ? `${topRevenueState.label} · ${formatNumber(topRevenueState.revenue)}` : "--"}</p>
           </div>
           <div>
-            <p className="detail-label">Inventory hotspot</p>
-            <p className="detail-value">{topInventoryState ? `${topInventoryState.label} · ${formatNumber(topInventoryState.averageInventory)}` : "--"}</p>
+            <p className="detail-label">{selectedExecutiveYear === "all" ? "Inventory hotspot" : "Selected year inventory"}</p>
+            <p className="detail-value">
+              {selectedExecutiveYear === "all"
+                ? topInventoryState
+                  ? `${topInventoryState.label} · ${formatNumber(topInventoryState.averageInventory)}`
+                  : "--"
+                : selectedInventoryYear
+                  ? `${selectedInventoryYear.year} · ${formatNumber(selectedInventoryYear.averageInventory)}`
+                  : "--"}
+            </p>
           </div>
         </div>
       </SectionCard>
@@ -246,7 +340,11 @@ export function DashboardPage() {
 
       <SectionCard
         title="Regional leaders"
-        description="We are reusing the same Bang-level breakdowns that already power the guided store drill-down pages."
+        description={
+          selectedExecutiveYear === "all"
+            ? "We are reusing the same Bang-level breakdowns that already power the guided store drill-down pages."
+            : `These Bang-level rankings are filtered to ${selectedExecutiveYear}.`
+        }
       >
         <div className="cube-grid">
           <article className="cube-card">

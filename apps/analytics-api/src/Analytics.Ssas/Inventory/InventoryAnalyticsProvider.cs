@@ -112,12 +112,13 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
-    public InventoryStoreBreakdownResult GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public InventoryStoreBreakdownResult GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year)
     {
         var normalizedLevel = NormalizeStoreLevel(level);
         var normalizedStateUniqueName = NormalizeStoreParentMember(stateMemberUniqueName, normalizedLevel, "state");
         var normalizedCityUniqueName = NormalizeStoreParentMember(cityMemberUniqueName, normalizedLevel, "city");
-        var mdx = BuildStoreBreakdownMdx(normalizedLevel, normalizedStateUniqueName, normalizedCityUniqueName);
+        var normalizedYear = NormalizeOptionalYear(year);
+        var mdx = BuildStoreBreakdownMdx(normalizedLevel, normalizedStateUniqueName, normalizedCityUniqueName, normalizedYear);
 
         try
         {
@@ -242,6 +243,21 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         };
     }
 
+    private static string? NormalizeOptionalYear(string? year)
+    {
+        if (string.IsNullOrWhiteSpace(year))
+        {
+            return null;
+        }
+
+        if (!int.TryParse(year, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedYear))
+        {
+            throw new ArgumentException("Year filter must be numeric when provided.", nameof(year));
+        }
+
+        return parsedYear.ToString(CultureInfo.InvariantCulture);
+    }
+
     private static string? NormalizeStoreParentMember(string? memberUniqueName, string level, string parentKind)
     {
         var isRequired =
@@ -299,11 +315,13 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         };
     }
 
-    private static string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    private static string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year)
     {
+        var slicer = BuildYearSlicer(year);
+
         return level switch
         {
-            "state" => """
+            "state" => $$"""
                 SELECT
                     {
                         [Measures].[Soluongtonkho]
@@ -312,6 +330,7 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
                         [Dim Store].[Hierarchy].[Bang].Members
                     ON ROWS
                 FROM [InventoryCube]
+                {{slicer}}
                 """,
             "city" => string.Join(Environment.NewLine,
                 "SELECT",
@@ -321,7 +340,8 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
                 "    NON EMPTY",
                 $"        Descendants(StrToMember('{EscapeMdxString(stateMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Thanhpho])",
                 "    ON ROWS",
-                "FROM [InventoryCube]"),
+                "FROM [InventoryCube]",
+                slicer),
             "store" => string.Join(Environment.NewLine,
                 "SELECT",
                 "    {",
@@ -330,9 +350,20 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
                 "    NON EMPTY",
                 $"        Descendants(StrToMember('{EscapeMdxString(cityMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Macuahang])",
                 "    ON ROWS",
-                "FROM [InventoryCube]"),
+                "FROM [InventoryCube]",
+                slicer),
             _ => throw new ArgumentOutOfRangeException(nameof(level))
         };
+    }
+
+    private static string BuildYearSlicer(string? year)
+    {
+        if (string.IsNullOrWhiteSpace(year))
+        {
+            return string.Empty;
+        }
+
+        return $"WHERE ([Dim Time].[Nam].&[{year}])";
     }
 
     private static string ResolveBreakdownKey(string level, string rawKey, string? quarter, int rowIndex)

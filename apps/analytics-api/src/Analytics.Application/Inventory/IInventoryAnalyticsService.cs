@@ -6,5 +6,5 @@ public interface IInventoryAnalyticsService
 {
     YearInventorySummaryResponse GetSummaryByYear();
     InventoryTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter);
-    InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName);
+    InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year);
 }

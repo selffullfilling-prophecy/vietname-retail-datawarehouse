@@ -34,9 +34,9 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             Rows: result.Rows);
     }
 
-    public InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year)
     {
-        var result = _inventoryAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName);
+        var result = _inventoryAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year);
 
         return new InventoryStoreBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,

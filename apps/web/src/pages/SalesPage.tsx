@@ -10,6 +10,9 @@ import {
   type YearSalesSummaryResponse,
 } from "../services/api";
 
+type PivotOrientation = "rows-years" | "rows-states";
+type SalesMetric = "revenue" | "salesVolume";
+
 export function SalesPage() {
   const [summary, setSummary] = useState<YearSalesSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -20,6 +23,13 @@ export function SalesPage() {
   const [storeBreakdown, setStoreBreakdown] = useState<SalesStoreBreakdownResponse | null>(null);
   const [storeBreakdownLoading, setStoreBreakdownLoading] = useState(true);
   const [storeBreakdownError, setStoreBreakdownError] = useState<string | null>(null);
+  const [pivotSnapshots, setPivotSnapshots] = useState<Record<string, SalesStoreBreakdownResponse["rows"]>>({});
+  const [pivotLoading, setPivotLoading] = useState(true);
+  const [pivotError, setPivotError] = useState<string | null>(null);
+  const [pivotOrientation, setPivotOrientation] = useState<PivotOrientation>("rows-years");
+  const [pivotMetric, setPivotMetric] = useState<SalesMetric>("revenue");
+  const [selectedPivotYears, setSelectedPivotYears] = useState<string[]>([]);
+  const [selectedPivotStates, setSelectedPivotStates] = useState<string[]>([]);
   const [drillState, setDrillState] = useState<{
     level: "year" | "quarter" | "month";
     year?: string;
@@ -148,6 +158,56 @@ export function SalesPage() {
     };
   }, [storeDrillState]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPivotSnapshots() {
+      if (!summary?.rows.length) {
+        return;
+      }
+
+      try {
+        setPivotLoading(true);
+        setPivotError(null);
+
+        const responses = await Promise.all(
+          summary.rows.map(async (row) => ({
+            year: row.year,
+            response: await getSalesStoreBreakdown("state", undefined, undefined, row.year),
+          })),
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextSnapshots: Record<string, SalesStoreBreakdownResponse["rows"]> = {};
+        for (const item of responses) {
+          nextSnapshots[item.year] = item.response.rows;
+        }
+
+        setPivotSnapshots(nextSnapshots);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Unknown slice/dice error.";
+        setPivotError(message);
+      } finally {
+        if (isMounted) {
+          setPivotLoading(false);
+        }
+      }
+    }
+
+    void loadPivotSnapshots();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [summary]);
+
   const totalRevenue = useMemo(
     () => summary?.rows.reduce((sum, row) => sum + row.revenue, 0) ?? 0,
     [summary],
@@ -156,10 +216,81 @@ export function SalesPage() {
     () => summary?.rows.reduce((sum, row) => sum + row.salesVolume, 0) ?? 0,
     [summary],
   );
-  const availableYears = summary?.rows.length ?? 0;
+  const availableYears = summary?.rows.map((row) => row.year) ?? [];
+  const availableStates = useMemo(() => {
+    const labels = new Set<string>();
+
+    Object.values(pivotSnapshots).forEach((rows) => {
+      rows.forEach((row) => labels.add(row.label));
+    });
+
+    return [...labels];
+  }, [pivotSnapshots]);
+
+  useEffect(() => {
+    if (!availableYears.length) {
+      return;
+    }
+
+    setSelectedPivotYears((previous) => {
+      if (!previous.length) {
+        return availableYears;
+      }
+
+      return previous.filter((year) => availableYears.includes(year));
+    });
+  }, [availableYears]);
+
+  useEffect(() => {
+    if (!availableStates.length) {
+      return;
+    }
+
+    setSelectedPivotStates((previous) => {
+      if (!previous.length) {
+        return availableStates;
+      }
+
+      return previous.filter((state) => availableStates.includes(state));
+    });
+  }, [availableStates]);
+
+  const pivotValueByYearState = useMemo(() => {
+    const values = new Map<string, { revenue: number; salesVolume: number }>();
+
+    Object.entries(pivotSnapshots).forEach(([year, rows]) => {
+      rows.forEach((row) => {
+        values.set(`${year}::${row.label}`, {
+          revenue: row.revenue,
+          salesVolume: row.salesVolume,
+        });
+      });
+    });
+
+    return values;
+  }, [pivotSnapshots]);
+
+  const filteredPivotYears = selectedPivotYears.length ? selectedPivotYears : availableYears;
+  const filteredPivotStates = selectedPivotStates.length ? selectedPivotStates : availableStates;
+  const pivotColumnLabels = pivotOrientation === "rows-years" ? filteredPivotStates : filteredPivotYears;
+  const pivotRowLabels = pivotOrientation === "rows-years" ? filteredPivotYears : filteredPivotStates;
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+  }
+
+  function toggleItem(currentItems: string[], nextItem: string, allItems: string[], setter: (items: string[]) => void) {
+    if (currentItems.length === 1 && currentItems[0] === nextItem) {
+      return;
+    }
+
+    if (currentItems.includes(nextItem)) {
+      const nextItems = currentItems.filter((item) => item !== nextItem);
+      setter(nextItems.length ? nextItems : [nextItem]);
+      return;
+    }
+
+    setter([...currentItems, nextItem]);
   }
 
   function handleDrillDown(key: string) {
@@ -243,6 +374,15 @@ export function SalesPage() {
     }
   }
 
+  function getPivotValue(year: string, state: string): number {
+    const value = pivotValueByYearState.get(`${year}::${state}`);
+    if (!value) {
+      return 0;
+    }
+
+    return pivotMetric === "revenue" ? value.revenue : value.salesVolume;
+  }
+
   return (
     <div className="page-stack">
       <header className="page-header">
@@ -250,7 +390,7 @@ export function SalesPage() {
           <p className="eyebrow">Sales Analysis</p>
           <h2>Revenue and volume exploration</h2>
           <p className="muted">
-            This view will support slice/dice by time, store, customer, and product, with controlled drill-down from region to store.
+            This view now supports drill-down, slice/dice, and guided pivoting across time and store dimensions.
           </p>
         </div>
       </header>
@@ -268,7 +408,7 @@ export function SalesPage() {
         />
         <KpiCard
           label="Years returned"
-          value={String(availableYears)}
+          value={String(availableYears.length)}
           hint="Number of year members returned by the current MDX query."
         />
       </div>
@@ -321,7 +461,7 @@ export function SalesPage() {
 
       <SectionCard
         title="Guided time drill-down"
-        description="This is the first OLAP interaction layer: start at year, then drill into quarter and month, and roll back up when needed."
+        description="Start at year, then drill into quarter and month, and roll back up when needed."
       >
         <div className="drill-toolbar">
           <div className="breadcrumb-row">
@@ -387,17 +527,6 @@ export function SalesPage() {
             </table>
           </div>
         )}
-      </SectionCard>
-
-      <SectionCard
-        title="Planned interactions"
-        description="These capabilities map directly to the SSAS model already designed."
-      >
-        <ul className="flat-list">
-          <li>Slice by year, quarter, month, region, city, customer segment, and product code.</li>
-          <li>Drill down from Bang to Thanhpho to Macuahang.</li>
-          <li>Switch between revenue and sales volume without rebuilding the page.</li>
-        </ul>
       </SectionCard>
 
       {storeBreakdownError ? (
@@ -477,6 +606,137 @@ export function SalesPage() {
                     </td>
                   </tr>
                 )) ?? null}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      {pivotError ? (
+        <section className="status-panel error-panel">
+          <strong>Sales slice/dice failed</strong>
+          <p>{pivotError}</p>
+          <p className="muted">This pivot section reuses year-filtered Bang breakdowns, so failures usually mean one of those state-level queries is down.</p>
+        </section>
+      ) : null}
+
+      <SectionCard
+        title="Guided slice, dice, and pivot"
+        description="This cross-tab lets you filter years and Bang, then swap rows and columns without changing cube logic."
+      >
+        <div className="filter-toolbar">
+          <div className="filter-group">
+            <p className="detail-label">Measure</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className={`filter-pill ${pivotMetric === "revenue" ? "filter-pill-active" : ""}`}
+                onClick={() => setPivotMetric("revenue")}
+              >
+                Revenue
+              </button>
+              <button
+                type="button"
+                className={`filter-pill ${pivotMetric === "salesVolume" ? "filter-pill-active" : ""}`}
+                onClick={() => setPivotMetric("salesVolume")}
+              >
+                Sales volume
+              </button>
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <p className="detail-label">Pivot</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() =>
+                  setPivotOrientation((current) =>
+                    current === "rows-years" ? "rows-states" : "rows-years",
+                  )}
+              >
+                Swap rows / columns
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="filter-toolbar">
+          <div className="filter-group">
+            <p className="detail-label">Slice by year</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className={`filter-pill ${selectedPivotYears.length === availableYears.length ? "filter-pill-active" : ""}`}
+                onClick={() => setSelectedPivotYears(availableYears)}
+              >
+                All years
+              </button>
+              {availableYears.map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  className={`filter-pill ${selectedPivotYears.includes(year) ? "filter-pill-active" : ""}`}
+                  onClick={() => toggleItem(selectedPivotYears, year, availableYears, setSelectedPivotYears)}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <p className="detail-label">Dice by Bang</p>
+            <div className="pill-row">
+              <button
+                type="button"
+                className={`filter-pill ${selectedPivotStates.length === availableStates.length ? "filter-pill-active" : ""}`}
+                onClick={() => setSelectedPivotStates(availableStates)}
+              >
+                All Bang
+              </button>
+              {availableStates.map((state) => (
+                <button
+                  key={state}
+                  type="button"
+                  className={`filter-pill ${selectedPivotStates.includes(state) ? "filter-pill-active" : ""}`}
+                  onClick={() => toggleItem(selectedPivotStates, state, availableStates, setSelectedPivotStates)}
+                >
+                  {state}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {pivotLoading ? (
+          <p className="muted">Loading pivot source rows from state-level yearly slices...</p>
+        ) : (
+          <div className="data-table-shell">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{pivotOrientation === "rows-years" ? "Year" : "Bang"}</th>
+                  {pivotColumnLabels.map((label) => (
+                    <th key={label}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pivotRowLabels.map((rowLabel) => (
+                  <tr key={rowLabel}>
+                    <td>{rowLabel}</td>
+                    {pivotColumnLabels.map((columnLabel) => {
+                      const value =
+                        pivotOrientation === "rows-years"
+                          ? getPivotValue(rowLabel, columnLabel)
+                          : getPivotValue(columnLabel, rowLabel);
+
+                      return <td key={`${rowLabel}-${columnLabel}`}>{formatNumber(value)}</td>;
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

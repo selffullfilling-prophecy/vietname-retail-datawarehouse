@@ -37,8 +37,9 @@ public sealed class InventoryController : ControllerBase
     public ActionResult<InventoryStoreBreakdownResponse> GetStoreBreakdown(
         [FromQuery] string level = "state",
         [FromQuery] string? stateMemberUniqueName = null,
-        [FromQuery] string? cityMemberUniqueName = null)
+        [FromQuery] string? cityMemberUniqueName = null,
+        [FromQuery] string? year = null)
     {
-        return Ok(_inventoryAnalyticsService.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName));
+        return Ok(_inventoryAnalyticsService.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year));
     }
 }
