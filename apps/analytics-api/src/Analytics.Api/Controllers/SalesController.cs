@@ -31,4 +31,14 @@ public sealed class SalesController : ControllerBase
     {
         return Ok(_salesAnalyticsService.GetTimeBreakdown(level, year, quarter));
     }
+
+    [HttpGet("store-breakdown")]
+    [ProducesResponseType(typeof(SalesStoreBreakdownResponse), StatusCodes.Status200OK)]
+    public ActionResult<SalesStoreBreakdownResponse> GetStoreBreakdown(
+        [FromQuery] string level = "state",
+        [FromQuery] string? stateMemberUniqueName = null,
+        [FromQuery] string? cityMemberUniqueName = null)
+    {
+        return Ok(_salesAnalyticsService.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName));
+    }
 }

@@ -112,6 +112,74 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
+    public InventoryStoreBreakdownResult GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    {
+        var normalizedLevel = NormalizeStoreLevel(level);
+        var normalizedStateUniqueName = NormalizeStoreParentMember(stateMemberUniqueName, normalizedLevel, "state");
+        var normalizedCityUniqueName = NormalizeStoreParentMember(cityMemberUniqueName, normalizedLevel, "city");
+        var mdx = BuildStoreBreakdownMdx(normalizedLevel, normalizedStateUniqueName, normalizedCityUniqueName);
+
+        try
+        {
+            using var connection = new AdomdConnection(BuildConnectionString());
+            connection.Open();
+
+            using var command = new AdomdCommand(mdx, connection);
+            var cellSet = command.ExecuteCellSet();
+
+            var rows = new List<InventoryStoreBreakdownRowDto>();
+            if (cellSet.Axes.Count < 2)
+            {
+                return new InventoryStoreBreakdownResult(
+                    Level: normalizedLevel,
+                    SelectedStateLabel: ExtractLabelFromUniqueName(normalizedStateUniqueName),
+                    SelectedCityLabel: ExtractLabelFromUniqueName(normalizedCityUniqueName),
+                    DrillTargetLevel: normalizedLevel switch
+                    {
+                        "state" => "city",
+                        "city" => "store",
+                        _ => null
+                    },
+                    Rows: rows);
+            }
+
+            var columnsCount = cellSet.Axes[0].Set.Tuples.Count;
+            var rowTuples = cellSet.Axes[1].Set.Tuples;
+
+            for (var rowIndex = 0; rowIndex < rowTuples.Count; rowIndex++)
+            {
+                var member = rowTuples[rowIndex].Members[0];
+                var averageInventory = ReadCellDecimal(cellSet, rowIndex, 0, columnsCount);
+
+                rows.Add(new InventoryStoreBreakdownRowDto(
+                    Key: member.Caption,
+                    Label: member.Caption,
+                    MemberUniqueName: member.UniqueName,
+                    AverageInventory: averageInventory,
+                    CanDrillDown: normalizedLevel is "state" or "city"));
+            }
+
+            return new InventoryStoreBreakdownResult(
+                Level: normalizedLevel,
+                SelectedStateLabel: normalizedLevel is "city" or "store" ? ExtractLabelFromUniqueName(normalizedStateUniqueName) : null,
+                SelectedCityLabel: normalizedLevel == "store" ? ExtractLabelFromUniqueName(normalizedCityUniqueName) : null,
+                DrillTargetLevel: normalizedLevel switch
+                {
+                    "state" => "city",
+                    "city" => "store",
+                    _ => null
+                },
+                Rows: rows);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                "Failed to query store breakdown from InventoryCube. " +
+                "Check the Dim Store hierarchy path and current member selection.",
+                ex);
+        }
+    }
+
     private string BuildConnectionString()
     {
         return $"Data Source={_settings.DataSource};Catalog={_settings.Catalog};";
@@ -163,6 +231,36 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         return parsedQuarter.ToString(CultureInfo.InvariantCulture);
     }
 
+    private static string NormalizeStoreLevel(string level)
+    {
+        return level.Trim().ToLowerInvariant() switch
+        {
+            "state" => "state",
+            "city" => "city",
+            "store" => "store",
+            _ => throw new ArgumentException("Store level must be one of: state, city, store.", nameof(level))
+        };
+    }
+
+    private static string? NormalizeStoreParentMember(string? memberUniqueName, string level, string parentKind)
+    {
+        var isRequired =
+            (level == "city" && parentKind == "state") ||
+            (level == "store" && (parentKind == "state" || parentKind == "city"));
+
+        if (!isRequired)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(memberUniqueName))
+        {
+            throw new ArgumentException($"A {parentKind} member unique name is required for {level} breakdown.", nameof(memberUniqueName));
+        }
+
+        return memberUniqueName;
+    }
+
     private static string BuildTimeBreakdownMdx(string level, string? year, string? quarter)
     {
         return level switch
@@ -195,6 +293,42 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
                 "    } ON COLUMNS,",
                 "    NON EMPTY",
                 "        Generate([SelectedQuarter], Descendants([Dim Time].[Hierarchy].CurrentMember, [Dim Time].[Hierarchy].[Thang]))",
+                "    ON ROWS",
+                "FROM [InventoryCube]"),
+            _ => throw new ArgumentOutOfRangeException(nameof(level))
+        };
+    }
+
+    private static string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    {
+        return level switch
+        {
+            "state" => """
+                SELECT
+                    {
+                        [Measures].[Soluongtonkho]
+                    } ON COLUMNS,
+                    NON EMPTY
+                        [Dim Store].[Hierarchy].[Bang].Members
+                    ON ROWS
+                FROM [InventoryCube]
+                """,
+            "city" => string.Join(Environment.NewLine,
+                "SELECT",
+                "    {",
+                "        [Measures].[Soluongtonkho]",
+                "    } ON COLUMNS,",
+                "    NON EMPTY",
+                $"        Descendants(StrToMember('{EscapeMdxString(stateMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Thanhpho])",
+                "    ON ROWS",
+                "FROM [InventoryCube]"),
+            "store" => string.Join(Environment.NewLine,
+                "SELECT",
+                "    {",
+                "        [Measures].[Soluongtonkho]",
+                "    } ON COLUMNS,",
+                "    NON EMPTY",
+                $"        Descendants(StrToMember('{EscapeMdxString(cityMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Macuahang])",
                 "    ON ROWS",
                 "FROM [InventoryCube]"),
             _ => throw new ArgumentOutOfRangeException(nameof(level))
@@ -240,6 +374,27 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         return matches[^1].Value;
     }
 
+    private static string ExtractLabelFromUniqueName(string? uniqueName)
+    {
+        if (string.IsNullOrWhiteSpace(uniqueName))
+        {
+            return string.Empty;
+        }
+
+        var matches = Regex.Matches(uniqueName, @"&\[(.*?)\]");
+        if (matches.Count == 0)
+        {
+            return uniqueName;
+        }
+
+        return matches[^1].Groups[1].Value;
+    }
+
+    private static string EscapeMdxString(string value)
+    {
+        return value.Replace("'", "''", StringComparison.Ordinal);
+    }
+
     private static string ReadAxisLabel(AdomdDataReader reader)
     {
         for (var ordinal = 0; ordinal < reader.FieldCount; ordinal++)
@@ -267,5 +422,18 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
 
         return Convert.ToDecimal(reader.GetValue(ordinal));
+    }
+
+    private static decimal ReadCellDecimal(CellSet cellSet, int rowIndex, int columnIndex, int columnsCount)
+    {
+        var cellOrdinal = (rowIndex * columnsCount) + columnIndex;
+        var value = cellSet.Cells[cellOrdinal].Value;
+
+        if (value is null or DBNull)
+        {
+            return 0m;
+        }
+
+        return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
     }
 }

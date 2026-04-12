@@ -33,4 +33,17 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             DrillTargetLevel: result.DrillTargetLevel,
             Rows: result.Rows);
     }
+
+    public SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    {
+        var result = _salesAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName);
+
+        return new SalesStoreBreakdownResponse(
+            GeneratedAtUtc: DateTime.UtcNow,
+            Level: result.Level,
+            SelectedStateLabel: result.SelectedStateLabel,
+            SelectedCityLabel: result.SelectedCityLabel,
+            DrillTargetLevel: result.DrillTargetLevel,
+            Rows: result.Rows);
+    }
 }

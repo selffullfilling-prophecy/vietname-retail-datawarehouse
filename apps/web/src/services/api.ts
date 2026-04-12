@@ -51,6 +51,22 @@ export type SalesTimeBreakdownResponse = {
   }>;
 };
 
+export type SalesStoreBreakdownResponse = {
+  generatedAtUtc: string;
+  level: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  drillTargetLevel: "city" | "store" | null;
+  rows: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string;
+    revenue: number;
+    salesVolume: number;
+    canDrillDown: boolean;
+  }>;
+};
+
 export type YearInventorySummaryResponse = {
   generatedAtUtc: string;
   rows: Array<{
@@ -68,6 +84,21 @@ export type InventoryTimeBreakdownResponse = {
   rows: Array<{
     key: string;
     label: string;
+    averageInventory: number;
+    canDrillDown: boolean;
+  }>;
+};
+
+export type InventoryStoreBreakdownResponse = {
+  generatedAtUtc: string;
+  level: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  drillTargetLevel: "city" | "store" | null;
+  rows: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string;
     averageInventory: number;
     canDrillDown: boolean;
   }>;
@@ -123,6 +154,27 @@ export async function getSalesTimeBreakdown(
   return response.json();
 }
 
+export async function getSalesStoreBreakdown(
+  level: "state" | "city" | "store",
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+): Promise<SalesStoreBreakdownResponse> {
+  const params = new URLSearchParams({ level });
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/sales/store-breakdown?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Sales store breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function getInventorySummaryByYear(): Promise<YearInventorySummaryResponse> {
   const response = await fetch(`${API_BASE_URL}/api/inventory/summary/by-year`);
   if (!response.ok) {
@@ -148,6 +200,27 @@ export async function getInventoryTimeBreakdown(
   const response = await fetch(`${API_BASE_URL}/api/inventory/time-breakdown?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Inventory time breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getInventoryStoreBreakdown(
+  level: "state" | "city" | "store",
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+): Promise<InventoryStoreBreakdownResponse> {
+  const params = new URLSearchParams({ level });
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/inventory/store-breakdown?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Inventory store breakdown request failed with status ${response.status}`);
   }
 
   return response.json();

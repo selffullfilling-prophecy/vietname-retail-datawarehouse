@@ -3,7 +3,9 @@ import { KpiCard } from "../components/KpiCard";
 import { SectionCard } from "../components/SectionCard";
 import {
   getSalesSummaryByYear,
+  getSalesStoreBreakdown,
   getSalesTimeBreakdown,
+  type SalesStoreBreakdownResponse,
   type SalesTimeBreakdownResponse,
   type YearSalesSummaryResponse,
 } from "../services/api";
@@ -15,11 +17,21 @@ export function SalesPage() {
   const [breakdown, setBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
   const [breakdownLoading, setBreakdownLoading] = useState(true);
   const [breakdownError, setBreakdownError] = useState<string | null>(null);
+  const [storeBreakdown, setStoreBreakdown] = useState<SalesStoreBreakdownResponse | null>(null);
+  const [storeBreakdownLoading, setStoreBreakdownLoading] = useState(true);
+  const [storeBreakdownError, setStoreBreakdownError] = useState<string | null>(null);
   const [drillState, setDrillState] = useState<{
     level: "year" | "quarter" | "month";
     year?: string;
     quarter?: string;
   }>({ level: "year" });
+  const [storeDrillState, setStoreDrillState] = useState<{
+    level: "state" | "city" | "store";
+    stateMemberUniqueName?: string;
+    cityMemberUniqueName?: string;
+    stateLabel?: string;
+    cityLabel?: string;
+  }>({ level: "state" });
 
   useEffect(() => {
     let isMounted = true;
@@ -96,6 +108,46 @@ export function SalesPage() {
     };
   }, [drillState]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadStoreBreakdown() {
+      try {
+        setStoreBreakdownLoading(true);
+        setStoreBreakdownError(null);
+
+        const response = await getSalesStoreBreakdown(
+          storeDrillState.level,
+          storeDrillState.stateMemberUniqueName,
+          storeDrillState.cityMemberUniqueName,
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setStoreBreakdown(response);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Unknown store breakdown error.";
+        setStoreBreakdownError(message);
+      } finally {
+        if (isMounted) {
+          setStoreBreakdownLoading(false);
+        }
+      }
+    }
+
+    void loadStoreBreakdown();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [storeDrillState]);
+
   const totalRevenue = useMemo(
     () => summary?.rows.reduce((sum, row) => sum + row.revenue, 0) ?? 0,
     [summary],
@@ -148,6 +200,46 @@ export function SalesPage() {
 
     if (drillState.level === "quarter") {
       setDrillState({ level: "year" });
+    }
+  }
+
+  function handleStoreDrillDown(row: SalesStoreBreakdownResponse["rows"][number]) {
+    if (!storeBreakdown?.drillTargetLevel) {
+      return;
+    }
+
+    if (storeBreakdown.level === "state") {
+      setStoreDrillState({
+        level: "city",
+        stateMemberUniqueName: row.memberUniqueName,
+        stateLabel: row.label,
+      });
+      return;
+    }
+
+    if (storeBreakdown.level === "city" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
+      setStoreDrillState({
+        level: "store",
+        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+        stateLabel: storeDrillState.stateLabel,
+        cityMemberUniqueName: row.memberUniqueName,
+        cityLabel: row.label,
+      });
+    }
+  }
+
+  function handleStoreRollUp() {
+    if (storeDrillState.level === "store" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
+      setStoreDrillState({
+        level: "city",
+        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+        stateLabel: storeDrillState.stateLabel,
+      });
+      return;
+    }
+
+    if (storeDrillState.level === "city") {
+      setStoreDrillState({ level: "state" });
     }
   }
 
@@ -306,6 +398,89 @@ export function SalesPage() {
           <li>Drill down from Bang to Thanhpho to Macuahang.</li>
           <li>Switch between revenue and sales volume without rebuilding the page.</li>
         </ul>
+      </SectionCard>
+
+      {storeBreakdownError ? (
+        <section className="status-panel error-panel">
+          <strong>Sales store drill-down failed</strong>
+          <p>{storeBreakdownError}</p>
+          <p className="muted">If time drill-down works but store drill-down fails, we should validate the Dim Store hierarchy path and member unique names returned from SSAS.</p>
+        </section>
+      ) : null}
+
+      <SectionCard
+        title="Guided store drill-down"
+        description="This OLAP path follows the Store hierarchy directly: Bang to Thanhpho to Macuahang."
+      >
+        <div className="drill-toolbar">
+          <div className="breadcrumb-row">
+            <button
+              type="button"
+              className={`breadcrumb-button ${storeDrillState.level === "state" ? "breadcrumb-button-active" : ""}`}
+              onClick={() => setStoreDrillState({ level: "state" })}
+            >
+              Bang
+            </button>
+            {storeDrillState.stateLabel ? (
+              <button
+                type="button"
+                className={`breadcrumb-button ${storeDrillState.level === "city" ? "breadcrumb-button-active" : ""}`}
+                onClick={() =>
+                  setStoreDrillState({
+                    level: "city",
+                    stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+                    stateLabel: storeDrillState.stateLabel,
+                  })}
+              >
+                {storeDrillState.stateLabel}
+              </button>
+            ) : null}
+            {storeDrillState.cityLabel ? (
+              <span className="breadcrumb-chip">{storeDrillState.cityLabel}</span>
+            ) : null}
+          </div>
+
+          {storeDrillState.level !== "state" ? (
+            <button type="button" className="secondary-button" onClick={handleStoreRollUp}>
+              Roll up
+            </button>
+          ) : null}
+        </div>
+
+        {storeBreakdownLoading ? (
+          <p className="muted">Loading store breakdown from SSAS...</p>
+        ) : (
+          <div className="data-table-shell">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{storeBreakdown?.level === "state" ? "Bang" : storeBreakdown?.level === "city" ? "Thanh pho" : "Ma cua hang"}</th>
+                  <th>Revenue</th>
+                  <th>Sales volume</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {storeBreakdown?.rows.map((row) => (
+                  <tr key={`${storeBreakdown.level}-${row.memberUniqueName}`}>
+                    <td>{row.label}</td>
+                    <td>{formatNumber(row.revenue)}</td>
+                    <td>{formatNumber(row.salesVolume)}</td>
+                    <td>
+                      {row.canDrillDown && storeBreakdown.drillTargetLevel ? (
+                        <button type="button" className="secondary-button" onClick={() => handleStoreDrillDown(row)}>
+                          View {storeBreakdown.drillTargetLevel}
+                        </button>
+                      ) : (
+                        <span className="muted">Leaf level</span>
+                      )}
+                    </td>
+                  </tr>
+                )) ?? null}
+              </tbody>
+            </table>
+          </div>
+        )}
       </SectionCard>
     </div>
   );

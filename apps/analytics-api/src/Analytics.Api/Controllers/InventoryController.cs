@@ -31,4 +31,14 @@ public sealed class InventoryController : ControllerBase
     {
         return Ok(_inventoryAnalyticsService.GetTimeBreakdown(level, year, quarter));
     }
+
+    [HttpGet("store-breakdown")]
+    [ProducesResponseType(typeof(InventoryStoreBreakdownResponse), StatusCodes.Status200OK)]
+    public ActionResult<InventoryStoreBreakdownResponse> GetStoreBreakdown(
+        [FromQuery] string level = "state",
+        [FromQuery] string? stateMemberUniqueName = null,
+        [FromQuery] string? cityMemberUniqueName = null)
+    {
+        return Ok(_inventoryAnalyticsService.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName));
+    }
 }

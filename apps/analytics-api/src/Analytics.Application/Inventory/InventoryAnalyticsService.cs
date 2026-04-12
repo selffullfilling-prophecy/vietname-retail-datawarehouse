@@ -33,4 +33,17 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             DrillTargetLevel: result.DrillTargetLevel,
             Rows: result.Rows);
     }
+
+    public InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    {
+        var result = _inventoryAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName);
+
+        return new InventoryStoreBreakdownResponse(
+            GeneratedAtUtc: DateTime.UtcNow,
+            Level: result.Level,
+            SelectedStateLabel: result.SelectedStateLabel,
+            SelectedCityLabel: result.SelectedCityLabel,
+            DrillTargetLevel: result.DrillTargetLevel,
+            Rows: result.Rows);
+    }
 }
