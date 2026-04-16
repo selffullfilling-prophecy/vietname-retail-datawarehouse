@@ -1,0 +1,16 @@
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.csproj.AssemblyReference.cache
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.AssemblyInfoInputs.cache
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.AssemblyInfo.cs
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.csproj.CoreCompileInputs.cache
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.sourcelink.json
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\bin\Debug\net8.0\Analytics.Ssas.deps.json
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\bin\Debug\net8.0\Analytics.Ssas.dll
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\bin\Debug\net8.0\Analytics.Ssas.pdb
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\bin\Debug\net8.0\Analytics.Contracts.dll
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\bin\Debug\net8.0\Analytics.Contracts.pdb
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytic.972D9F15.Up2Date
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.dll
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\refint\Analytics.Ssas.dll
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.pdb
+C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\ref\Analytics.Ssas.dll
