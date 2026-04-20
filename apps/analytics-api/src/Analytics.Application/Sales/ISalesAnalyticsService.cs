@@ -5,6 +5,7 @@ namespace Analytics.Application.Sales;
 public interface ISalesAnalyticsService
 {
     YearSalesSummaryResponse GetSummaryByYear();
-    SalesTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter);
-    SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year);
+    SalesTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName);
+    SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter);
+    SalesPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName);
 }

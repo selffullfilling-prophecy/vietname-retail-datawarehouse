@@ -27,9 +27,11 @@ public sealed class InventoryController : ControllerBase
     public ActionResult<InventoryTimeBreakdownResponse> GetTimeBreakdown(
         [FromQuery] string level = "year",
         [FromQuery] string? year = null,
-        [FromQuery] string? quarter = null)
+        [FromQuery] string? quarter = null,
+        [FromQuery] string? stateMemberUniqueName = null,
+        [FromQuery] string? cityMemberUniqueName = null)
     {
-        return Ok(_inventoryAnalyticsService.GetTimeBreakdown(level, year, quarter));
+        return Ok(_inventoryAnalyticsService.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName));
     }
 
     [HttpGet("store-breakdown")]
@@ -38,8 +40,22 @@ public sealed class InventoryController : ControllerBase
         [FromQuery] string level = "state",
         [FromQuery] string? stateMemberUniqueName = null,
         [FromQuery] string? cityMemberUniqueName = null,
-        [FromQuery] string? year = null)
+        [FromQuery] string? year = null,
+        [FromQuery] string? quarter = null)
     {
-        return Ok(_inventoryAnalyticsService.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year));
+        return Ok(_inventoryAnalyticsService.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year, quarter));
+    }
+
+    [HttpGet("pivot")]
+    [ProducesResponseType(typeof(InventoryPivotResponse), StatusCodes.Status200OK)]
+    public ActionResult<InventoryPivotResponse> GetPivot(
+        [FromQuery] string timeLevel = "year",
+        [FromQuery] string? year = null,
+        [FromQuery] string? quarter = null,
+        [FromQuery] string storeLevel = "state",
+        [FromQuery] string? stateMemberUniqueName = null,
+        [FromQuery] string? cityMemberUniqueName = null)
+    {
+        return Ok(_inventoryAnalyticsService.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName));
     }
 }

@@ -2,23 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { KpiCard } from "../components/KpiCard";
 import { SectionCard } from "../components/SectionCard";
 import {
-  getHealth,
   getInventoryStoreBreakdown,
   getInventorySummaryByYear,
-  getMetadataOverview,
   getSalesStoreBreakdown,
   getSalesSummaryByYear,
-  type HealthResponse,
   type InventoryStoreBreakdownResponse,
-  type MetadataOverviewResponse,
   type SalesStoreBreakdownResponse,
   type YearInventorySummaryResponse,
   type YearSalesSummaryResponse,
 } from "../services/api";
 
 export function DashboardPage() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [metadata, setMetadata] = useState<MetadataOverviewResponse | null>(null);
   const [salesSummary, setSalesSummary] = useState<YearSalesSummaryResponse | null>(null);
   const [inventorySummary, setInventorySummary] = useState<YearInventorySummaryResponse | null>(null);
   const [salesStates, setSalesStates] = useState<SalesStoreBreakdownResponse | null>(null);
@@ -35,14 +29,7 @@ export function DashboardPage() {
         setIsLoading(true);
         setError(null);
 
-        const [
-          healthResponse,
-          metadataResponse,
-          salesSummaryResponse,
-          inventorySummaryResponse,
-        ] = await Promise.all([
-          getHealth(),
-          getMetadataOverview(),
+        const [salesSummaryResponse, inventorySummaryResponse] = await Promise.all([
           getSalesSummaryByYear(),
           getInventorySummaryByYear(),
         ]);
@@ -51,8 +38,6 @@ export function DashboardPage() {
           return;
         }
 
-        setHealth(healthResponse);
-        setMetadata(metadataResponse);
         setSalesSummary(salesSummaryResponse);
         setInventorySummary(inventorySummaryResponse);
       } catch (loadError) {
@@ -60,7 +45,7 @@ export function DashboardPage() {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Unknown dashboard error.";
+        const message = loadError instanceof Error ? loadError.message : "Không thể tải dữ liệu tổng quan.";
         setError(message);
       } finally {
         if (isMounted) {
@@ -81,7 +66,8 @@ export function DashboardPage() {
       return;
     }
 
-    setSelectedExecutiveYear(salesSummary.rows.at(-1)?.year ?? "all");
+    const latestRow = salesSummary.rows[salesSummary.rows.length - 1];
+    setSelectedExecutiveYear(latestRow?.year ?? "all");
   }, [salesSummary, selectedExecutiveYear]);
 
   useEffect(() => {
@@ -110,7 +96,7 @@ export function DashboardPage() {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Unknown executive filter error.";
+        const message = loadError instanceof Error ? loadError.message : "Không thể tải xếp hạng khu vực.";
         setError(message);
       }
     }
@@ -122,16 +108,14 @@ export function DashboardPage() {
     };
   }, [salesSummary, selectedExecutiveYear]);
 
-  const cubeCount = metadata?.cubes.length ?? 0;
-  const latestSalesYear = salesSummary?.rows.at(-1) ?? null;
-  const previousSalesYear = salesSummary?.rows.at(-2) ?? null;
-  const latestInventoryYear = inventorySummary?.rows.at(-1) ?? null;
+  const latestSalesYear = salesSummary?.rows.length ? salesSummary.rows[salesSummary.rows.length - 1] : null;
+  const previousSalesYear =
+    salesSummary && salesSummary.rows.length > 1 ? salesSummary.rows[salesSummary.rows.length - 2] : null;
+  const latestInventoryYear =
+    inventorySummary?.rows.length ? inventorySummary.rows[inventorySummary.rows.length - 1] : null;
   const executiveYears = salesSummary?.rows.map((row) => row.year) ?? [];
   const totalRevenue = salesSummary?.rows.reduce((sum, row) => sum + row.revenue, 0) ?? 0;
   const totalSalesVolume = salesSummary?.rows.reduce((sum, row) => sum + row.salesVolume, 0) ?? 0;
-  const averageInventoryAcrossYears = inventorySummary?.rows.length
-    ? (inventorySummary.rows.reduce((sum, row) => sum + row.averageInventory, 0) / inventorySummary.rows.length)
-    : 0;
   const revenueGrowth = useMemo(() => {
     if (!latestSalesYear || !previousSalesYear || previousSalesYear.revenue === 0) {
       return null;
@@ -139,28 +123,23 @@ export function DashboardPage() {
 
     return ((latestSalesYear.revenue - previousSalesYear.revenue) / previousSalesYear.revenue) * 100;
   }, [latestSalesYear, previousSalesYear]);
-  const topRevenueState = useMemo(() => {
-    if (!salesStates?.rows.length) {
-      return null;
-    }
 
-    return [...salesStates.rows].sort((left, right) => right.revenue - left.revenue)[0];
-  }, [salesStates]);
-  const topInventoryState = useMemo(() => {
-    if (!inventoryStates?.rows.length) {
-      return null;
-    }
-
-    return [...inventoryStates.rows].sort((left, right) => right.averageInventory - left.averageInventory)[0];
-  }, [inventoryStates]);
   const revenueLeaders = useMemo(
-    () => [...(salesStates?.rows ?? [])].sort((left, right) => right.revenue - left.revenue).slice(0, 5),
+    () => [...(salesStates?.rows ?? [])].sort((left, right) => right.revenue - left.revenue).slice(0, 3),
     [salesStates],
   );
+
   const inventoryHotspots = useMemo(
-    () => [...(inventoryStates?.rows ?? [])].sort((left, right) => right.averageInventory - left.averageInventory).slice(0, 5),
+    () =>
+      [...(inventoryStates?.rows ?? [])]
+        .sort((left, right) => right.averageInventory - left.averageInventory)
+        .slice(0, 3),
     [inventoryStates],
   );
+
+  const topRevenueState = revenueLeaders[0] ?? null;
+  const topInventoryState = inventoryHotspots[0] ?? null;
+
   const selectedSalesYear = useMemo(() => {
     if (!salesSummary?.rows.length) {
       return null;
@@ -172,6 +151,7 @@ export function DashboardPage() {
 
     return salesSummary.rows.find((row) => row.year === selectedExecutiveYear) ?? null;
   }, [latestSalesYear, salesSummary, selectedExecutiveYear]);
+
   const selectedInventoryYear = useMemo(() => {
     if (!inventorySummary?.rows.length) {
       return null;
@@ -195,239 +175,200 @@ export function DashboardPage() {
     }).format(value)}%`;
   }
 
+  function formatCurrencyCompact(value: number): string {
+    if (value >= 1_000_000_000) {
+      return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value / 1_000_000_000)} tỷ VNĐ`;
+    }
+
+    if (value >= 1_000_000) {
+      return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value / 1_000_000)} triệu VNĐ`;
+    }
+
+    return `${formatNumber(value)} VNĐ`;
+  }
+
   return (
-    <div className="page-stack">
-      <header className="page-header">
+    <div className="page-stack dashboard-page compact-screen-page">
+      <header className="page-header compact-page-header">
         <div>
-          <p className="eyebrow">Executive Overview</p>
-          <h2>Live executive pulse across revenue, volume, and stock</h2>
-          <p className="muted">
-            This overview now reads real SSAS outputs. We are using it as the fast top layer before drilling into Sales and Inventory detail pages.
-          </p>
+          <p className="eyebrow">Tổng quan điều hành</p>
+          <h2>Bức tranh doanh thu và tồn kho trong một màn hình</h2>
+          <p className="muted">Rút gọn chỉ số trọng tâm và nhóm dẫn đầu để người dùng xem nhanh mà không phải kéo trang.</p>
         </div>
       </header>
 
-      <div className="kpi-grid">
+      <div className="kpi-grid compact-kpi-grid dashboard-kpi-grid">
         <KpiCard
-          label="Total revenue"
-          value={isLoading ? "Loading..." : formatNumber(totalRevenue)}
-          hint={latestSalesYear ? `Combined revenue across ${salesSummary?.rows.length ?? 0} years, latest year ${latestSalesYear.year}.` : "Waiting for SalesCube yearly summary."}
+          label="Tổng doanh thu"
+          value={isLoading ? "Đang tải..." : formatCurrencyCompact(totalRevenue)}
+          hint={latestSalesYear ? `Lũy kế đến ${latestSalesYear.year}.` : "Đang chờ dữ liệu."}
         />
         <KpiCard
-          label="Sales volume"
-          value={isLoading ? "Loading..." : formatNumber(totalSalesVolume)}
-          hint={latestSalesYear ? `${formatNumber(latestSalesYear.salesVolume)} units sold in ${latestSalesYear.year}.` : "Waiting for SalesCube yearly summary."}
+          label="Sản lượng bán"
+          value={isLoading ? "Đang tải..." : `${formatNumber(totalSalesVolume)} đơn vị`}
+          hint={latestSalesYear ? `${formatNumber(latestSalesYear.salesVolume)} đơn vị năm ${latestSalesYear.year}.` : "Đang chờ dữ liệu."}
         />
         <KpiCard
-          label="Revenue growth"
-          value={isLoading ? "Loading..." : revenueGrowth === null ? "--" : formatPercent(revenueGrowth)}
-          hint={
-            latestSalesYear && previousSalesYear
-              ? `${previousSalesYear.year} to ${latestSalesYear.year} year-over-year revenue movement.`
-              : "Need at least two yearly points to compute growth."
-          }
+          label="Tăng trưởng doanh thu"
+          value={isLoading ? "Đang tải..." : revenueGrowth === null ? "--" : formatPercent(revenueGrowth)}
+          hint={latestSalesYear && previousSalesYear ? `So với ${previousSalesYear.year}.` : "Cần ít nhất 2 năm dữ liệu."}
         />
         <KpiCard
-          label="Avg inventory"
-          value={isLoading ? "Loading..." : formatNumber(averageInventoryAcrossYears)}
-          hint={latestInventoryYear ? `Average of yearly InventoryCube values, latest year ${latestInventoryYear.year}.` : "Waiting for InventoryCube yearly summary."}
+          label="Tồn kho TB năm mới nhất"
+          value={isLoading ? "Đang tải..." : latestInventoryYear ? `${formatNumber(latestInventoryYear.averageInventory)} đơn vị` : "--"}
+          hint={latestInventoryYear ? `Ghi nhận tại ${latestInventoryYear.year}.` : "Đang chờ dữ liệu."}
         />
       </div>
 
       {error ? (
         <section className="status-panel error-panel">
-          <strong>Executive dashboard load failed</strong>
+          <strong>Không thể tải dashboard điều hành</strong>
           <p>{error}</p>
-          <p className="muted">The page depends on multiple cube queries. If one API is down, this summary should be checked from Swagger first.</p>
         </section>
       ) : null}
 
-      {isLoading ? (
-        <section className="status-panel">
-          <strong>Loading executive signals...</strong>
-          <p className="muted">The dashboard is waiting for health, metadata, yearly summaries, and state-level breakdowns.</p>
-        </section>
-      ) : null}
-
-      <SectionCard
-        title="Executive pulse"
-        description="This section keeps the current operating picture small and readable before we drill into specific cubes."
-      >
-        <div className="drill-toolbar">
-          <div className="breadcrumb-row">
-            <button
-              type="button"
-              className={`breadcrumb-button ${selectedExecutiveYear === "all" ? "breadcrumb-button-active" : ""}`}
-              onClick={() => setSelectedExecutiveYear("all")}
-            >
-              All years
-            </button>
-            {executiveYears.map((year) => (
-              <button
-                key={year}
-                type="button"
-                className={`breadcrumb-button ${selectedExecutiveYear === year ? "breadcrumb-button-active" : ""}`}
-                onClick={() => setSelectedExecutiveYear(year)}
-              >
-                {year}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="detail-grid">
-          <div>
-            <p className="detail-label">Service status</p>
-            <p className="detail-value">
-              <span className={`status-pill ${health?.status === "ok" ? "status-pill-ok" : ""}`}>
-                {health?.status ?? "unknown"}
-              </span>
-            </p>
-          </div>
-          <div>
-            <p className="detail-label">{selectedExecutiveYear === "all" ? "Latest revenue year" : "Selected year revenue"}</p>
-            <p className="detail-value">{selectedSalesYear ? `${selectedSalesYear.year} · ${formatNumber(selectedSalesYear.revenue)}` : "--"}</p>
-          </div>
-          <div>
-            <p className="detail-label">Top revenue state</p>
-            <p className="detail-value">{topRevenueState ? `${topRevenueState.label} · ${formatNumber(topRevenueState.revenue)}` : "--"}</p>
-          </div>
-          <div>
-            <p className="detail-label">{selectedExecutiveYear === "all" ? "Inventory hotspot" : "Selected year inventory"}</p>
-            <p className="detail-value">
-              {selectedExecutiveYear === "all"
-                ? topInventoryState
-                  ? `${topInventoryState.label} · ${formatNumber(topInventoryState.averageInventory)}`
-                  : "--"
-                : selectedInventoryYear
-                  ? `${selectedInventoryYear.year} · ${formatNumber(selectedInventoryYear.averageInventory)}`
-                  : "--"}
-            </p>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Year-over-year trend"
-        description="This gives leaders one compact view of how sales and inventory are moving before they drill into time or store detail."
-      >
-        <div className="data-table-shell">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Year</th>
-                <th>Revenue</th>
-                <th>Sales volume</th>
-                <th>Average inventory</th>
-              </tr>
-            </thead>
-            <tbody>
-              {salesSummary?.rows.map((salesRow) => {
-                const inventoryRow = inventorySummary?.rows.find((row) => row.year === salesRow.year);
-                return (
-                  <tr key={salesRow.year}>
-                    <td>{salesRow.year}</td>
-                    <td>{formatNumber(salesRow.revenue)}</td>
-                    <td>{formatNumber(salesRow.salesVolume)}</td>
-                    <td>{inventoryRow ? formatNumber(inventoryRow.averageInventory) : "--"}</td>
-                  </tr>
-                );
-              }) ?? null}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Regional leaders"
-        description={
-          selectedExecutiveYear === "all"
-            ? "We are reusing the same Bang-level breakdowns that already power the guided store drill-down pages."
-            : `These Bang-level rankings are filtered to ${selectedExecutiveYear}.`
-        }
-      >
-        <div className="cube-grid">
-          <article className="cube-card">
-            <header className="cube-card-header">
-              <div>
-                <p className="eyebrow">SalesCube</p>
-                <h3>Top states by revenue</h3>
+      <div className="dashboard-grid compact-dashboard-grid">
+        <SectionCard
+          title="Điểm nhấn điều hành"
+          description="Lọc nhanh theo năm để xem ngay chỉ số nổi bật."
+        >
+          <div className="dashboard-card-body">
+            <div className="drill-toolbar compact-toolbar">
+              <div className="breadcrumb-row">
+                <button
+                  type="button"
+                  className={`breadcrumb-button ${selectedExecutiveYear === "all" ? "breadcrumb-button-active" : ""}`}
+                  onClick={() => setSelectedExecutiveYear("all")}
+                >
+                  Toàn kỳ
+                </button>
+                {executiveYears.map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    className={`breadcrumb-button ${selectedExecutiveYear === year ? "breadcrumb-button-active" : ""}`}
+                    onClick={() => setSelectedExecutiveYear(year)}
+                  >
+                    {year}
+                  </button>
+                ))}
               </div>
-            </header>
-            <div className="data-table-shell">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Bang</th>
-                    <th>Revenue</th>
-                    <th>Sales volume</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {revenueLeaders.map((row) => (
-                    <tr key={row.memberUniqueName}>
-                      <td>{row.label}</td>
-                      <td>{formatNumber(row.revenue)}</td>
-                      <td>{formatNumber(row.salesVolume)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
-          </article>
 
-          <article className="cube-card">
-            <header className="cube-card-header">
+            <div className="detail-grid compact-detail-grid compact-dashboard-details">
               <div>
-                <p className="eyebrow">InventoryCube</p>
-                <h3>Top states by average inventory</h3>
+                <p className="detail-label">Năm xem</p>
+                <p className="detail-value">{selectedSalesYear?.year ?? latestSalesYear?.year ?? "--"}</p>
               </div>
-            </header>
-            <div className="data-table-shell">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Bang</th>
-                    <th>Average inventory</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventoryHotspots.map((row) => (
-                    <tr key={row.memberUniqueName}>
-                      <td>{row.label}</td>
-                      <td>{formatNumber(row.averageInventory)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div>
+                <p className="detail-label">Doanh thu</p>
+                <p className="detail-value">{selectedSalesYear ? formatCurrencyCompact(selectedSalesYear.revenue) : "--"}</p>
+              </div>
+              <div>
+                <p className="detail-label">Sản lượng</p>
+                <p className="detail-value">{selectedSalesYear ? `${formatNumber(selectedSalesYear.salesVolume)} đơn vị` : "--"}</p>
+              </div>
+              <div>
+                <p className="detail-label">Tồn kho TB</p>
+                <p className="detail-value">{selectedInventoryYear ? `${formatNumber(selectedInventoryYear.averageInventory)} đơn vị` : "--"}</p>
+              </div>
+              <div>
+                <p className="detail-label">Dẫn đầu doanh thu</p>
+                <p className="detail-value">{topRevenueState ? `${topRevenueState.label} | ${formatCurrencyCompact(topRevenueState.revenue)}` : "--"}</p>
+              </div>
+              <div>
+                <p className="detail-label">Tồn kho cao</p>
+                <p className="detail-value">{topInventoryState ? `${topInventoryState.label} | ${formatNumber(topInventoryState.averageInventory)} đơn vị` : "--"}</p>
+              </div>
             </div>
-          </article>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
 
-      <SectionCard
-        title="OLAP model snapshot"
-        description="This is now just a compact sanity check that the dashboard is still aligned with the deployed SSAS catalog."
-      >
-        <div className="detail-grid">
-          <div>
-            <p className="detail-label">Catalog</p>
-            <p className="detail-value">{health?.ssas.catalog ?? "--"}</p>
+        <SectionCard
+          title="Xu hướng theo năm"
+          description="Doanh thu, sản lượng và tồn kho trong cùng một bảng ngắn."
+        >
+          <div className="data-table-shell compact-table-shell dashboard-table-shell">
+            <table className="data-table compact-data-table">
+              <thead>
+                <tr>
+                  <th>Năm</th>
+                  <th>Doanh thu</th>
+                  <th>Sản lượng</th>
+                  <th>Tồn kho TB</th>
+                </tr>
+              </thead>
+              <tbody>
+                {salesSummary?.rows.map((salesRow) => {
+                  const inventoryRow = inventorySummary?.rows.find((row) => row.year === salesRow.year);
+
+                  return (
+                    <tr key={salesRow.year}>
+                      <td>{salesRow.year}</td>
+                      <td>{formatCurrencyCompact(salesRow.revenue)}</td>
+                      <td>{formatNumber(salesRow.salesVolume)}</td>
+                      <td>{inventoryRow ? formatNumber(inventoryRow.averageInventory) : "--"}</td>
+                    </tr>
+                  );
+                }) ?? null}
+              </tbody>
+            </table>
           </div>
-          <div>
-            <p className="detail-label">Data source</p>
-            <p className="detail-value">{health?.ssas.dataSource ?? "--"}</p>
+        </SectionCard>
+
+        <SectionCard
+          title="Khu vực dẫn đầu"
+          description={selectedExecutiveYear === "all" ? "Thu gọn hai cube để xem nhanh top khu vực." : `Top khu vực sau khi lọc năm ${selectedExecutiveYear}.`}
+        >
+          <div className="mini-cube-grid">
+            <article className="mini-cube-card">
+              <p className="eyebrow">SalesCube</p>
+              <h3>Top doanh thu</h3>
+              <div className="data-table-shell mini-cube-table-shell">
+                <table className="data-table compact-data-table mini-data-table">
+                  <thead>
+                    <tr>
+                      <th>Khu vực</th>
+                      <th>Doanh thu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {revenueLeaders.map((row) => (
+                      <tr key={row.memberUniqueName}>
+                        <td>{row.label}</td>
+                        <td>{formatCurrencyCompact(row.revenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article className="mini-cube-card">
+              <p className="eyebrow">InventoryCube</p>
+              <h3>Top tồn kho TB</h3>
+              <div className="data-table-shell mini-cube-table-shell">
+                <table className="data-table compact-data-table mini-data-table">
+                  <thead>
+                    <tr>
+                      <th>Khu vực</th>
+                      <th>Tồn kho TB</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventoryHotspots.map((row) => (
+                      <tr key={row.memberUniqueName}>
+                        <td>{row.label}</td>
+                        <td>{formatNumber(row.averageInventory)} đơn vị</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </div>
-          <div>
-            <p className="detail-label">Cubes deployed</p>
-            <p className="detail-value">{cubeCount}</p>
-          </div>
-          <div>
-            <p className="detail-label">Metadata refreshed</p>
-            <p className="detail-value">{metadata?.generatedAtUtc ?? "--"}</p>
-          </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      </div>
     </div>
   );
 }

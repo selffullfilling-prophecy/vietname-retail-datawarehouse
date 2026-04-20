@@ -21,9 +21,9 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             Rows: rows);
     }
 
-    public SalesTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter)
+    public SalesTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName)
     {
-        var result = _salesAnalyticsProvider.GetTimeBreakdown(level, year, quarter);
+        var result = _salesAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName);
 
         return new SalesTimeBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,
@@ -34,9 +34,9 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             Rows: result.Rows);
     }
 
-    public SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year)
+    public SalesStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter)
     {
-        var result = _salesAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year);
+        var result = _salesAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year, quarter);
 
         return new SalesStoreBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,
@@ -45,5 +45,22 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             SelectedCityLabel: result.SelectedCityLabel,
             DrillTargetLevel: result.DrillTargetLevel,
             Rows: result.Rows);
+    }
+
+    public SalesPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    {
+        var result = _salesAnalyticsProvider.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName);
+
+        return new SalesPivotResponse(
+            GeneratedAtUtc: DateTime.UtcNow,
+            TimeLevel: result.TimeLevel,
+            SelectedYear: result.SelectedYear,
+            SelectedQuarter: result.SelectedQuarter,
+            StoreLevel: result.StoreLevel,
+            SelectedStateLabel: result.SelectedStateLabel,
+            SelectedCityLabel: result.SelectedCityLabel,
+            TimeAxis: result.TimeAxis,
+            StoreAxis: result.StoreAxis,
+            Cells: result.Cells);
     }
 }

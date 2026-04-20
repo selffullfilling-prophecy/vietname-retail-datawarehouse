@@ -1,0 +1,262 @@
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5057
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\hoang\Documents\DataWarehouse\tmp\api-build\Debug\net8.0
+fail: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      System.InvalidOperationException: Failed to query store breakdown from SalesCube. Check the Dim Store hierarchy path, selected parent member, and active time filter context.
+       ---> Microsoft.AnalysisServices.AdomdClient.AdomdConnectionException: Authentication failed.
+       ---> System.ComponentModel.Win32Exception (0x8009030E): No credentials are available in the security package
+         at Microsoft.AnalysisServices.Sspi.SspiHelper.AcquireCredentialsHandle(String package, SecurityCredentialUsage usage, SecHandle& handle)
+         at Microsoft.AnalysisServices.Sspi.NTAuthenticationSession.InitializeCredentialsHandle(SecurityPackageInfo package, NTAuthenticationConfiguration configuration)
+         at Microsoft.AnalysisServices.Sspi.NTAuthenticationSession..ctor(SecurityMode mode, String remotePeerId, String packageName, NTAuthenticationConfiguration configuration)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.Authenticate(ConnectionInfo connectionInfo, DateTime timeout, SecurityMode securityMode)
+         --- End of inner exception stack trace ---
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.OpenConnectionAndCheckIfSessionTokenNeeded(ConnectionInfo connectionInfo)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.<>c__DisplayClass169_0.<OpenConnection>b__0()
+         at Microsoft.AnalysisServices.Security.TransparentUserContext.ExecuteInUserContextImpl[TResult](Func`1 action)
+         at Microsoft.AnalysisServices.Security.UserContext.ExecuteInUserContext[TResult](Func`1 action)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.OpenConnection(ConnectionInfo connectionInfo, Boolean& isSessionTokenNeeded)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.Connect(ConnectionInfo connectionInfo, Boolean beginSession)
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.XmlaClientProvider.Connect()
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.XmlaClientProvider.Microsoft.AnalysisServices.AdomdClient.AdomdConnection.IXmlaClientProviderEx.ConnectXmla()
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.ConnectToXMLA(Boolean createSession, Boolean isHTTP)
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.Open()
+         at Analytics.Ssas.Sales.SalesAnalyticsProvider.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\Sales\SalesAnalyticsProvider.cs:line 135
+         --- End of inner exception stack trace ---
+         at Analytics.Ssas.Sales.SalesAnalyticsProvider.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\Sales\SalesAnalyticsProvider.cs:line 188
+         at Analytics.Application.Sales.SalesAnalyticsService.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Application\Sales\SalesAnalyticsService.cs:line 39
+         at Analytics.Api.Controllers.SalesController.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Api\Controllers\SalesController.cs:line 46
+         at lambda_method5(Closure, Object, Object[])
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeActionMethodAsync()
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeNextActionFilterAsync()
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+         at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+fail: Microsoft.AspNetCore.Server.Kestrel[13]
+      Connection id "0HNKUM08H6R1L", Request id "0HNKUM08H6R1L:00000001": An unhandled exception was thrown by the application.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger`1.Microsoft.Extensions.Logging.ILogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerMessage.<>c__DisplayClass8_0.<Define>g__Log|0(ILogger logger, Exception exception)
+         at Microsoft.AspNetCore.Diagnostics.DiagnosticsTelemetry.ReportUnhandledException(ILogger logger, HttpContext context, Exception ex)
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+warn: Microsoft.AspNetCore.Server.Kestrel[0]
+      Connection processing ended abnormally.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerMessage.<>c__DisplayClass12_0`2.<Define>g__Log|0(ILogger logger, T1 arg1, T2 arg2, Exception exception)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelTrace.GeneralLog.ApplicationError(ILogger logger, String connectionId, String traceIdentifier, Exception ex)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequestsAsync[TContext](IHttpApplication`1 application)
+crit: Microsoft.AspNetCore.Server.Kestrel[0]
+      Unexpected exception in HttpConnection.ProcessRequestsAsync.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelTrace.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerExtensions.Log(ILogger logger, LogLevel logLevel, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(ILogger logger, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequestsAsync[TContext](IHttpApplication`1 application)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequestsAsync[TContext](IHttpApplication`1 application)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.HttpConnection.ProcessRequestsAsync[TContext](IHttpApplication`1 httpApplication)
+fail: Microsoft.AspNetCore.Server.Kestrel[0]
+      Unhandled exception while processing 0HNKUM08H6R1L.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelTrace.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerExtensions.Log(ILogger logger, LogLevel logLevel, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.Extensions.Logging.LoggerExtensions.LogCritical(ILogger logger, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.HttpConnection.ProcessRequestsAsync[TContext](IHttpApplication`1 httpApplication)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelConnection`1.ExecuteAsync()
+fail: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      System.InvalidOperationException: Failed to query store breakdown from SalesCube. Check the Dim Store hierarchy path, selected parent member, and active time filter context.
+       ---> Microsoft.AnalysisServices.AdomdClient.AdomdConnectionException: Authentication failed.
+       ---> System.ComponentModel.Win32Exception (0x8009030E): No credentials are available in the security package
+         at Microsoft.AnalysisServices.Sspi.SspiHelper.AcquireCredentialsHandle(String package, SecurityCredentialUsage usage, SecHandle& handle)
+         at Microsoft.AnalysisServices.Sspi.NTAuthenticationSession.InitializeCredentialsHandle(SecurityPackageInfo package, NTAuthenticationConfiguration configuration)
+         at Microsoft.AnalysisServices.Sspi.NTAuthenticationSession..ctor(SecurityMode mode, String remotePeerId, String packageName, NTAuthenticationConfiguration configuration)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.Authenticate(ConnectionInfo connectionInfo, DateTime timeout, SecurityMode securityMode)
+         --- End of inner exception stack trace ---
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.OpenConnectionAndCheckIfSessionTokenNeeded(ConnectionInfo connectionInfo)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.<>c__DisplayClass169_0.<OpenConnection>b__0()
+         at Microsoft.AnalysisServices.Security.TransparentUserContext.ExecuteInUserContextImpl[TResult](Func`1 action)
+         at Microsoft.AnalysisServices.Security.UserContext.ExecuteInUserContext[TResult](Func`1 action)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.OpenConnection(ConnectionInfo connectionInfo, Boolean& isSessionTokenNeeded)
+         at Microsoft.AnalysisServices.AdomdClient.XmlaClient.Connect(ConnectionInfo connectionInfo, Boolean beginSession)
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.XmlaClientProvider.Connect()
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.XmlaClientProvider.Microsoft.AnalysisServices.AdomdClient.AdomdConnection.IXmlaClientProviderEx.ConnectXmla()
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.ConnectToXMLA(Boolean createSession, Boolean isHTTP)
+         at Microsoft.AnalysisServices.AdomdClient.AdomdConnection.Open()
+         at Analytics.Ssas.Sales.SalesAnalyticsProvider.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\Sales\SalesAnalyticsProvider.cs:line 135
+         --- End of inner exception stack trace ---
+         at Analytics.Ssas.Sales.SalesAnalyticsProvider.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Ssas\Sales\SalesAnalyticsProvider.cs:line 188
+         at Analytics.Application.Sales.SalesAnalyticsService.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Application\Sales\SalesAnalyticsService.cs:line 39
+         at Analytics.Api.Controllers.SalesController.GetStoreBreakdown(String level, String stateMemberUniqueName, String cityMemberUniqueName, String year, String quarter) in C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Api\Controllers\SalesController.cs:line 46
+         at lambda_method5(Closure, Object, Object[])
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeActionMethodAsync()
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeNextActionFilterAsync()
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+         at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+fail: Microsoft.AspNetCore.Server.Kestrel[13]
+      Connection id "0HNKUM08H6R1M", Request id "0HNKUM08H6R1M:00000001": An unhandled exception was thrown by the application.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger`1.Microsoft.Extensions.Logging.ILogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerMessage.<>c__DisplayClass8_0.<Define>g__Log|0(ILogger logger, Exception exception)
+         at Microsoft.AspNetCore.Diagnostics.DiagnosticsTelemetry.ReportUnhandledException(ILogger logger, HttpContext context, Exception ex)
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+warn: Microsoft.AspNetCore.Server.Kestrel[0]
+      Connection processing ended abnormally.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerMessage.<>c__DisplayClass12_0`2.<Define>g__Log|0(ILogger logger, T1 arg1, T2 arg2, Exception exception)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelTrace.GeneralLog.ApplicationError(ILogger logger, String connectionId, String traceIdentifier, Exception ex)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequestsAsync[TContext](IHttpApplication`1 application)
+crit: Microsoft.AspNetCore.Server.Kestrel[0]
+      Unexpected exception in HttpConnection.ProcessRequestsAsync.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelTrace.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerExtensions.Log(ILogger logger, LogLevel logLevel, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(ILogger logger, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequestsAsync[TContext](IHttpApplication`1 application)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequestsAsync[TContext](IHttpApplication`1 application)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.HttpConnection.ProcessRequestsAsync[TContext](IHttpApplication`1 httpApplication)
+fail: Microsoft.AspNetCore.Server.Kestrel[0]
+      Unhandled exception while processing 0HNKUM08H6R1M.
+      System.AggregateException: An error occurred while writing to logger(s). (Cannot open log for source '.NET Runtime'. You may not have write access.)
+       ---> System.InvalidOperationException: Cannot open log for source '.NET Runtime'. You may not have write access.
+       ---> System.ComponentModel.Win32Exception (5): Access is denied.
+         --- End of inner exception stack trace ---
+         at System.Diagnostics.EventLogInternal.OpenForWrite(String currentMachineName)
+         at System.Diagnostics.EventLogInternal.InternalWriteEvent(UInt32 eventID, UInt16 category, EventLogEntryType type, String[] strings, Byte[] rawData, String currentMachineName)
+         at System.Diagnostics.EventLogInternal.WriteEvent(EventInstance instance, Byte[] data, Object[] values)
+         at Microsoft.Extensions.Logging.EventLog.WindowsEventLog.WriteEntry(String message, EventLogEntryType type, Int32 eventID, Int16 category)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.WriteMessage(String message, EventLogEntryType eventLogEntryType, Int32 eventId)
+         at Microsoft.Extensions.Logging.EventLog.EventLogLogger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.Logger.<Log>g__LoggerLog|14_0[TState](LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func`3 formatter, List`1& exceptions, TState& state)
+         --- End of inner exception stack trace ---
+         at Microsoft.Extensions.Logging.Logger.ThrowLoggingError(List`1 exceptions)
+         at Microsoft.Extensions.Logging.Logger.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelTrace.Log[TState](LogLevel logLevel, EventId eventId, TState state, Exception exception, Func`3 formatter)
+         at Microsoft.Extensions.Logging.LoggerExtensions.Log(ILogger logger, LogLevel logLevel, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.Extensions.Logging.LoggerExtensions.LogCritical(ILogger logger, EventId eventId, Exception exception, String message, Object[] args)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.HttpConnection.ProcessRequestsAsync[TContext](IHttpApplication`1 httpApplication)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.KestrelConnection`1.ExecuteAsync()

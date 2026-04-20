@@ -2,15 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { KpiCard } from "../components/KpiCard";
 import { SectionCard } from "../components/SectionCard";
 import {
-  getInventorySummaryByYear,
+  getInventoryPivot,
   getInventoryStoreBreakdown,
+  getInventorySummaryByYear,
   getInventoryTimeBreakdown,
+  type InventoryPivotResponse,
   type InventoryStoreBreakdownResponse,
   type InventoryTimeBreakdownResponse,
   type YearInventorySummaryResponse,
 } from "../services/api";
 
-type PivotOrientation = "rows-years" | "rows-states";
+type PivotOrientation = "rows-time" | "rows-store";
+type InventoryTableView = "time" | "store" | "pivot";
 
 export function InventoryPage() {
   const [summary, setSummary] = useState<YearInventorySummaryResponse | null>(null);
@@ -22,12 +25,13 @@ export function InventoryPage() {
   const [storeBreakdown, setStoreBreakdown] = useState<InventoryStoreBreakdownResponse | null>(null);
   const [storeBreakdownLoading, setStoreBreakdownLoading] = useState(true);
   const [storeBreakdownError, setStoreBreakdownError] = useState<string | null>(null);
-  const [pivotSnapshots, setPivotSnapshots] = useState<Record<string, InventoryStoreBreakdownResponse["rows"]>>({});
+  const [pivot, setPivot] = useState<InventoryPivotResponse | null>(null);
   const [pivotLoading, setPivotLoading] = useState(true);
   const [pivotError, setPivotError] = useState<string | null>(null);
-  const [pivotOrientation, setPivotOrientation] = useState<PivotOrientation>("rows-years");
-  const [selectedPivotYears, setSelectedPivotYears] = useState<string[]>([]);
-  const [selectedPivotStates, setSelectedPivotStates] = useState<string[]>([]);
+  const [tableView, setTableView] = useState<InventoryTableView>("time");
+  const [pivotOrientation, setPivotOrientation] = useState<PivotOrientation>("rows-time");
+  const [selectedPivotTimeKeys, setSelectedPivotTimeKeys] = useState<string[]>([]);
+  const [selectedPivotStoreKeys, setSelectedPivotStoreKeys] = useState<string[]>([]);
   const [drillState, setDrillState] = useState<{
     level: "year" | "quarter" | "month";
     year?: string;
@@ -40,6 +44,16 @@ export function InventoryPage() {
     stateLabel?: string;
     cityLabel?: string;
   }>({ level: "state" });
+
+  const activeTimeYearFilter =
+    drillState.level === "quarter" || drillState.level === "month" ? drillState.year : undefined;
+  const activeTimeQuarterFilter = drillState.level === "month" ? drillState.quarter : undefined;
+  const activeStateFilter =
+    storeDrillState.level === "city" || storeDrillState.level === "store"
+      ? storeDrillState.stateMemberUniqueName
+      : undefined;
+  const activeCityFilter =
+    storeDrillState.level === "store" ? storeDrillState.cityMemberUniqueName : undefined;
 
   useEffect(() => {
     let isMounted = true;
@@ -60,7 +74,7 @@ export function InventoryPage() {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Unknown inventory page error.";
+        const message = loadError instanceof Error ? loadError.message : "Không thể tải tổng hợp tồn kho.";
         setSummaryError(message);
       } finally {
         if (isMounted) {
@@ -88,6 +102,8 @@ export function InventoryPage() {
           drillState.level,
           drillState.year,
           drillState.quarter,
+          activeStateFilter,
+          activeCityFilter,
         );
 
         if (!isMounted) {
@@ -100,7 +116,7 @@ export function InventoryPage() {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Unknown inventory time breakdown error.";
+        const message = loadError instanceof Error ? loadError.message : "Không thể tải drill-down thời gian.";
         setBreakdownError(message);
       } finally {
         if (isMounted) {
@@ -114,7 +130,7 @@ export function InventoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [drillState]);
+  }, [drillState, activeStateFilter, activeCityFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -128,6 +144,8 @@ export function InventoryPage() {
           storeDrillState.level,
           storeDrillState.stateMemberUniqueName,
           storeDrillState.cityMemberUniqueName,
+          activeTimeYearFilter,
+          activeTimeQuarterFilter,
         );
 
         if (!isMounted) {
@@ -140,7 +158,7 @@ export function InventoryPage() {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Unknown inventory store breakdown error.";
+        const message = loadError instanceof Error ? loadError.message : "Không thể tải drill-down khu vực.";
         setStoreBreakdownError(message);
       } finally {
         if (isMounted) {
@@ -154,43 +172,36 @@ export function InventoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [storeDrillState]);
+  }, [storeDrillState, activeTimeYearFilter, activeTimeQuarterFilter]);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadPivotSnapshots() {
-      if (!summary?.rows.length) {
-        return;
-      }
-
+    async function loadPivot() {
       try {
         setPivotLoading(true);
         setPivotError(null);
 
-        const responses = await Promise.all(
-          summary.rows.map(async (row) => ({
-            year: row.year,
-            response: await getInventoryStoreBreakdown("state", undefined, undefined, row.year),
-          })),
+        const response = await getInventoryPivot(
+          drillState.level,
+          storeDrillState.level,
+          drillState.year,
+          drillState.quarter,
+          storeDrillState.stateMemberUniqueName,
+          storeDrillState.cityMemberUniqueName,
         );
 
         if (!isMounted) {
           return;
         }
 
-        const nextSnapshots: Record<string, InventoryStoreBreakdownResponse["rows"]> = {};
-        for (const item of responses) {
-          nextSnapshots[item.year] = item.response.rows;
-        }
-
-        setPivotSnapshots(nextSnapshots);
+        setPivot(response);
       } catch (loadError) {
         if (!isMounted) {
           return;
         }
 
-        const message = loadError instanceof Error ? loadError.message : "Unknown inventory slice/dice error.";
+        const message = loadError instanceof Error ? loadError.message : "Không thể tải pivot tồn kho.";
         setPivotError(message);
       } finally {
         if (isMounted) {
@@ -199,17 +210,52 @@ export function InventoryPage() {
       }
     }
 
-    void loadPivotSnapshots();
+    void loadPivot();
 
     return () => {
       isMounted = false;
     };
-  }, [summary]);
+  }, [drillState, storeDrillState]);
+
+  useEffect(() => {
+    const nextKeys = pivot?.timeAxis.map((item) => item.key) ?? [];
+    if (!nextKeys.length) {
+      setSelectedPivotTimeKeys([]);
+      return;
+    }
+
+    setSelectedPivotTimeKeys((previous) => {
+      if (!previous.length) {
+        return nextKeys;
+      }
+
+      const filtered = previous.filter((key) => nextKeys.includes(key));
+      return filtered.length ? filtered : nextKeys;
+    });
+  }, [pivot]);
+
+  useEffect(() => {
+    const nextKeys = pivot?.storeAxis.map((item) => item.key) ?? [];
+    if (!nextKeys.length) {
+      setSelectedPivotStoreKeys([]);
+      return;
+    }
+
+    setSelectedPivotStoreKeys((previous) => {
+      if (!previous.length) {
+        return nextKeys;
+      }
+
+      const filtered = previous.filter((key) => nextKeys.includes(key));
+      return filtered.length ? filtered : nextKeys;
+    });
+  }, [pivot]);
 
   const totalAverageInventory = useMemo(
     () => summary?.rows.reduce((sum, row) => sum + row.averageInventory, 0) ?? 0,
     [summary],
   );
+  const latestYear = summary?.rows.length ? summary.rows[summary.rows.length - 1] : null;
   const peakYear = useMemo(() => {
     if (!summary?.rows.length) {
       return null;
@@ -218,66 +264,28 @@ export function InventoryPage() {
     return [...summary.rows].sort((left, right) => right.averageInventory - left.averageInventory)[0];
   }, [summary]);
   const availableYears = summary?.rows.map((row) => row.year) ?? [];
-  const availableStates = useMemo(() => {
-    const labels = new Set<string>();
+  const pivotCellMap = useMemo(() => {
+    const entries = pivot?.cells.map((cell) => [`${cell.timeKey}::${cell.storeKey}`, cell] as const) ?? [];
+    return new Map(entries);
+  }, [pivot]);
 
-    Object.values(pivotSnapshots).forEach((rows) => {
-      rows.forEach((row) => labels.add(row.label));
-    });
+  const filteredTimeAxis =
+    pivot?.timeAxis.filter((item) => selectedPivotTimeKeys.includes(item.key)) ?? [];
+  const filteredStoreAxis =
+    pivot?.storeAxis.filter((item) => selectedPivotStoreKeys.includes(item.key)) ?? [];
+  const pivotRows = pivotOrientation === "rows-time" ? filteredTimeAxis : filteredStoreAxis;
+  const pivotColumns = pivotOrientation === "rows-time" ? filteredStoreAxis : filteredTimeAxis;
 
-    return [...labels];
-  }, [pivotSnapshots]);
-
-  useEffect(() => {
-    if (!availableYears.length) {
-      return;
-    }
-
-    setSelectedPivotYears((previous) => {
-      if (!previous.length) {
-        return availableYears;
-      }
-
-      return previous.filter((year) => availableYears.includes(year));
-    });
-  }, [availableYears]);
-
-  useEffect(() => {
-    if (!availableStates.length) {
-      return;
-    }
-
-    setSelectedPivotStates((previous) => {
-      if (!previous.length) {
-        return availableStates;
-      }
-
-      return previous.filter((state) => availableStates.includes(state));
-    });
-  }, [availableStates]);
-
-  const pivotValueByYearState = useMemo(() => {
-    const values = new Map<string, number>();
-
-    Object.entries(pivotSnapshots).forEach(([year, rows]) => {
-      rows.forEach((row) => {
-        values.set(`${year}::${row.label}`, row.averageInventory);
-      });
-    });
-
-    return values;
-  }, [pivotSnapshots]);
-
-  const filteredPivotYears = selectedPivotYears.length ? selectedPivotYears : availableYears;
-  const filteredPivotStates = selectedPivotStates.length ? selectedPivotStates : availableStates;
-  const pivotColumnLabels = pivotOrientation === "rows-years" ? filteredPivotStates : filteredPivotYears;
-  const pivotRowLabels = pivotOrientation === "rows-years" ? filteredPivotYears : filteredPivotStates;
+  const activeTableLoading =
+    tableView === "time" ? breakdownLoading : tableView === "store" ? storeBreakdownLoading : pivotLoading;
+  const activeTableError =
+    tableView === "time" ? breakdownError : tableView === "store" ? storeBreakdownError : pivotError;
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
   }
 
-  function toggleItem(currentItems: string[], nextItem: string, allItems: string[], setter: (items: string[]) => void) {
+  function toggleItem(currentItems: string[], nextItem: string, setter: (items: string[]) => void) {
     if (currentItems.length === 1 && currentItems[0] === nextItem) {
       return;
     }
@@ -296,9 +304,10 @@ export function InventoryPage() {
       return;
     }
 
+    const quarterMatches = key.match(/\d+/g);
     const normalizedQuarterKey =
-      breakdown.level === "quarter"
-        ? key.match(/\d+/g)?.at(-1) ?? key
+      breakdown.level === "quarter" && quarterMatches?.length
+        ? quarterMatches[quarterMatches.length - 1]
         : key;
 
     if (breakdown.level === "year") {
@@ -318,7 +327,7 @@ export function InventoryPage() {
     }
   }
 
-  function handleRollUp() {
+  function handleRollUpTime() {
     if (drillState.level === "month" && drillState.year) {
       setDrillState({
         level: "quarter",
@@ -357,7 +366,7 @@ export function InventoryPage() {
     }
   }
 
-  function handleStoreRollUp() {
+  function handleRollUpStore() {
     if (storeDrillState.level === "store" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
       setStoreDrillState({
         level: "city",
@@ -372,342 +381,355 @@ export function InventoryPage() {
     }
   }
 
-  function getPivotValue(year: string, state: string): number {
-    return pivotValueByYearState.get(`${year}::${state}`) ?? 0;
+  function getTimeLevelLabel(level: "year" | "quarter" | "month"): string {
+    if (level === "year") {
+      return "Năm";
+    }
+
+    if (level === "quarter") {
+      return "Quý";
+    }
+
+    return "Tháng";
+  }
+
+  function getStoreLevelLabel(level: "state" | "city" | "store"): string {
+    if (level === "state") {
+      return "Khu vực";
+    }
+
+    if (level === "city") {
+      return "Thành phố";
+    }
+
+    return "Cửa hàng";
+  }
+
+  function getDrillTargetLabel(level: "quarter" | "month" | "city" | "store" | null): string {
+    if (level === "quarter") {
+      return "Xem quý";
+    }
+
+    if (level === "month") {
+      return "Xem tháng";
+    }
+
+    if (level === "city") {
+      return "Xem thành phố";
+    }
+
+    if (level === "store") {
+      return "Xem cửa hàng";
+    }
+
+    return "";
+  }
+
+  function getPivotValue(timeKey: string, storeKey: string): string {
+    const cell = pivotCellMap.get(`${timeKey}::${storeKey}`);
+    return cell ? `${formatNumber(cell.averageInventory)} đơn vị` : "--";
   }
 
   return (
-    <div className="page-stack">
-      <header className="page-header">
+    <div className="page-stack analytics-page compact-screen-page">
+      <header className="page-header compact-page-header">
         <div>
-          <p className="eyebrow">Inventory Analysis</p>
-          <h2>Average inventory monitoring</h2>
+          <p className="eyebrow">Phân tích tồn kho</p>
+          <h2>Drill down, slice/dice và pivot trong một bảng OLAP</h2>
           <p className="muted">
-            Inventory now supports drill-down, slice/dice, and guided pivoting while keeping the semi-additive wording explicit.
+            Thời gian và khu vực giờ liên thông cùng một ngữ cảnh, nên drill theo một chiều sẽ tác động đúng lên chiều còn lại và cả pivot.
           </p>
         </div>
       </header>
 
-      <div className="kpi-grid">
+      <div className="kpi-grid analytics-kpi-grid compact-kpi-grid">
         <KpiCard
-          label="Total yearly average inventory"
-          value={summaryLoading ? "Loading..." : formatNumber(totalAverageInventory)}
-          hint="Sum of yearly average inventory values returned by InventoryCube."
+          label="Tổng tồn kho TB"
+          value={summaryLoading ? "Đang tải..." : `${formatNumber(totalAverageInventory)} đơn vị`}
+          hint="Tổng hợp của các năm."
         />
         <KpiCard
-          label="Peak year"
+          label="Năm mới nhất"
+          value={latestYear?.year ?? "--"}
+          hint={latestYear ? `${formatNumber(latestYear.averageInventory)} đơn vị` : "Đang chờ dữ liệu."}
+        />
+        <KpiCard
+          label="Năm cao nhất"
           value={peakYear?.year ?? "--"}
-          hint={peakYear ? `${formatNumber(peakYear.averageInventory)} average units` : "Highest year in the current query result."}
-        />
-        <KpiCard
-          label="Years returned"
-          value={String(availableYears.length)}
-          hint="Number of year members returned by the current MDX query."
+          hint={peakYear ? `${formatNumber(peakYear.averageInventory)} đơn vị` : "Đang chờ dữ liệu."}
         />
       </div>
 
-      {summaryError ? (
-        <section className="status-panel error-panel">
-          <strong>Inventory page load failed</strong>
-          <p>{summaryError}</p>
-          <p className="muted">If this fails while sales works, we should verify the InventoryCube measure name and year hierarchy path.</p>
-        </section>
-      ) : null}
-
       <SectionCard
-        title="Yearly inventory summary"
-        description="This page reads the semi-additive inventory measure directly from InventoryCube."
+        title="Bảng OLAP tồn kho"
+        description="Cùng một ngữ cảnh lọc được áp dụng cho bảng thời gian, bảng khu vực và ma trận pivot."
       >
-        {summaryLoading ? (
-          <p className="muted">Loading yearly inventory summary from SSAS...</p>
-        ) : (
-          <div className="data-table-shell">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Year</th>
-                  <th>Average inventory</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary?.rows.map((row) => (
-                  <tr key={row.year}>
-                    <td>{row.year}</td>
-                    <td>{formatNumber(row.averageInventory)}</td>
-                  </tr>
-                )) ?? null}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
-
-      {breakdownError ? (
-        <section className="status-panel error-panel">
-          <strong>Inventory drill-down failed</strong>
-          <p>{breakdownError}</p>
-          <p className="muted">If summary works but drill-down fails, we should validate the Dim Time hierarchy path used in InventoryCube.</p>
-        </section>
-      ) : null}
-
-      <SectionCard
-        title="Guided time drill-down"
-        description="This mirrors the Sales workflow, but keeps the inventory wording explicit because the measure is semi-additive."
-      >
-        <div className="drill-toolbar">
-          <div className="breadcrumb-row">
-            <button
-              type="button"
-              className={`breadcrumb-button ${drillState.level === "year" ? "breadcrumb-button-active" : ""}`}
-              onClick={() => setDrillState({ level: "year" })}
-            >
-              Years
-            </button>
-            {drillState.year ? (
-              <button
-                type="button"
-                className={`breadcrumb-button ${drillState.level === "quarter" ? "breadcrumb-button-active" : ""}`}
-                onClick={() => setDrillState({ level: "quarter", year: drillState.year })}
-              >
-                {drillState.year}
-              </button>
-            ) : null}
-            {drillState.quarter ? (
-              <span className="breadcrumb-chip">Q{drillState.quarter}</span>
-            ) : null}
-          </div>
-
-          {drillState.level !== "year" ? (
-            <button type="button" className="secondary-button" onClick={handleRollUp}>
-              Roll up
-            </button>
-          ) : null}
-        </div>
-
-        {breakdownLoading ? (
-          <p className="muted">Loading inventory time breakdown from SSAS...</p>
-        ) : (
-          <div className="data-table-shell">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{breakdown?.level === "year" ? "Year" : breakdown?.level === "quarter" ? "Quarter" : "Month"}</th>
-                  <th>Average inventory</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown?.rows.map((row) => (
-                  <tr key={`${breakdown.level}-${row.key}`}>
-                    <td>{row.label}</td>
-                    <td>{formatNumber(row.averageInventory)}</td>
-                    <td>
-                      {row.canDrillDown && breakdown.drillTargetLevel ? (
-                        <button type="button" className="secondary-button" onClick={() => handleDrillDown(row.key)}>
-                          View {breakdown.drillTargetLevel}
-                        </button>
-                      ) : (
-                        <span className="muted">Leaf level</span>
-                      )}
-                    </td>
-                  </tr>
-                )) ?? null}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
-
-      {storeBreakdownError ? (
-        <section className="status-panel error-panel">
-          <strong>Inventory store drill-down failed</strong>
-          <p>{storeBreakdownError}</p>
-          <p className="muted">If time drill-down works but store drill-down fails, we should validate the Dim Store hierarchy path and member unique names returned from SSAS.</p>
-        </section>
-      ) : null}
-
-      <SectionCard
-        title="Guided store drill-down"
-        description="This follows the Store hierarchy directly so inventory investigation can move from Bang to Thanhpho to Macuahang."
-      >
-        <div className="drill-toolbar">
-          <div className="breadcrumb-row">
-            <button
-              type="button"
-              className={`breadcrumb-button ${storeDrillState.level === "state" ? "breadcrumb-button-active" : ""}`}
-              onClick={() => setStoreDrillState({ level: "state" })}
-            >
-              Bang
-            </button>
-            {storeDrillState.stateLabel ? (
-              <button
-                type="button"
-                className={`breadcrumb-button ${storeDrillState.level === "city" ? "breadcrumb-button-active" : ""}`}
-                onClick={() =>
-                  setStoreDrillState({
-                    level: "city",
-                    stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-                    stateLabel: storeDrillState.stateLabel,
-                  })}
-              >
-                {storeDrillState.stateLabel}
-              </button>
-            ) : null}
-            {storeDrillState.cityLabel ? (
-              <span className="breadcrumb-chip">{storeDrillState.cityLabel}</span>
-            ) : null}
-          </div>
-
-          {storeDrillState.level !== "state" ? (
-            <button type="button" className="secondary-button" onClick={handleStoreRollUp}>
-              Roll up
-            </button>
-          ) : null}
-        </div>
-
-        {storeBreakdownLoading ? (
-          <p className="muted">Loading inventory store breakdown from SSAS...</p>
-        ) : (
-          <div className="data-table-shell">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{storeBreakdown?.level === "state" ? "Bang" : storeBreakdown?.level === "city" ? "Thanh pho" : "Ma cua hang"}</th>
-                  <th>Average inventory</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {storeBreakdown?.rows.map((row) => (
-                  <tr key={`${storeBreakdown.level}-${row.memberUniqueName}`}>
-                    <td>{row.label}</td>
-                    <td>{formatNumber(row.averageInventory)}</td>
-                    <td>
-                      {row.canDrillDown && storeBreakdown.drillTargetLevel ? (
-                        <button type="button" className="secondary-button" onClick={() => handleStoreDrillDown(row)}>
-                          View {storeBreakdown.drillTargetLevel}
-                        </button>
-                      ) : (
-                        <span className="muted">Leaf level</span>
-                      )}
-                    </td>
-                  </tr>
-                )) ?? null}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
-
-      {pivotError ? (
-        <section className="status-panel error-panel">
-          <strong>Inventory slice/dice failed</strong>
-          <p>{pivotError}</p>
-          <p className="muted">This pivot section reuses year-filtered Bang breakdowns, so failures usually mean one of those state-level queries is down.</p>
-        </section>
-      ) : null}
-
-      <SectionCard
-        title="Guided slice, dice, and pivot"
-        description="This cross-tab lets you filter years and Bang, then swap rows and columns without changing the underlying inventory cube logic."
-      >
-        <div className="filter-toolbar">
-          <div className="filter-group">
-            <p className="detail-label">Pivot</p>
-            <div className="pill-row">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() =>
-                  setPivotOrientation((current) =>
-                    current === "rows-years" ? "rows-states" : "rows-years",
-                  )}
-              >
-                Swap rows / columns
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="filter-toolbar">
-          <div className="filter-group">
-            <p className="detail-label">Slice by year</p>
-            <div className="pill-row">
-              <button
-                type="button"
-                className={`filter-pill ${selectedPivotYears.length === availableYears.length ? "filter-pill-active" : ""}`}
-                onClick={() => setSelectedPivotYears(availableYears)}
-              >
-                All years
-              </button>
-              {availableYears.map((year) => (
+        <div className="olap-card">
+          <div className="olap-toolbar">
+            <div className="olap-toolbar-row">
+              <div className="olap-group">
+                <span className="olap-group-label">Góc nhìn</span>
                 <button
-                  key={year}
                   type="button"
-                  className={`filter-pill ${selectedPivotYears.includes(year) ? "filter-pill-active" : ""}`}
-                  onClick={() => toggleItem(selectedPivotYears, year, availableYears, setSelectedPivotYears)}
+                  className={`filter-pill ${tableView === "time" ? "filter-pill-active" : ""}`}
+                  onClick={() => setTableView("time")}
                 >
-                  {year}
+                  Thời gian
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <p className="detail-label">Dice by Bang</p>
-            <div className="pill-row">
-              <button
-                type="button"
-                className={`filter-pill ${selectedPivotStates.length === availableStates.length ? "filter-pill-active" : ""}`}
-                onClick={() => setSelectedPivotStates(availableStates)}
-              >
-                All Bang
-              </button>
-              {availableStates.map((state) => (
                 <button
-                  key={state}
                   type="button"
-                  className={`filter-pill ${selectedPivotStates.includes(state) ? "filter-pill-active" : ""}`}
-                  onClick={() => toggleItem(selectedPivotStates, state, availableStates, setSelectedPivotStates)}
+                  className={`filter-pill ${tableView === "store" ? "filter-pill-active" : ""}`}
+                  onClick={() => setTableView("store")}
                 >
-                  {state}
+                  Khu vực
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className={`filter-pill ${tableView === "pivot" ? "filter-pill-active" : ""}`}
+                  onClick={() => setTableView("pivot")}
+                >
+                  Pivot
+                </button>
+              </div>
+
+              {tableView === "pivot" ? (
+                <div className="olap-group">
+                  <span className="olap-group-label">Pivot</span>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      setPivotOrientation((current) =>
+                        current === "rows-time" ? "rows-store" : "rows-time",
+                      )}
+                  >
+                    Đảo hàng / cột
+                  </button>
+                </div>
+              ) : null}
             </div>
+
+            <div className="olap-toolbar-row">
+              <div className="olap-group">
+                <span className="olap-group-label">Drill thời gian</span>
+                <button
+                  type="button"
+                  className={`breadcrumb-button ${drillState.level === "year" ? "breadcrumb-button-active" : ""}`}
+                  onClick={() => setDrillState({ level: "year" })}
+                >
+                  Năm
+                </button>
+                {drillState.year ? (
+                  <button
+                    type="button"
+                    className={`breadcrumb-button ${drillState.level === "quarter" ? "breadcrumb-button-active" : ""}`}
+                    onClick={() => setDrillState({ level: "quarter", year: drillState.year })}
+                  >
+                    {drillState.year}
+                  </button>
+                ) : null}
+                {drillState.quarter ? <span className="breadcrumb-chip">Q{drillState.quarter}</span> : null}
+              </div>
+
+              {drillState.level !== "year" ? (
+                <button type="button" className="secondary-button" onClick={handleRollUpTime}>
+                  Roll up thời gian
+                </button>
+              ) : null}
+            </div>
+
+            <div className="olap-toolbar-row">
+              <div className="olap-group">
+                <span className="olap-group-label">Drill khu vực</span>
+                <button
+                  type="button"
+                  className={`breadcrumb-button ${storeDrillState.level === "state" ? "breadcrumb-button-active" : ""}`}
+                  onClick={() => setStoreDrillState({ level: "state" })}
+                >
+                  Khu vực
+                </button>
+                {storeDrillState.stateLabel ? (
+                  <button
+                    type="button"
+                    className={`breadcrumb-button ${storeDrillState.level === "city" ? "breadcrumb-button-active" : ""}`}
+                    onClick={() =>
+                      setStoreDrillState({
+                        level: "city",
+                        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+                        stateLabel: storeDrillState.stateLabel,
+                      })}
+                  >
+                    {storeDrillState.stateLabel}
+                  </button>
+                ) : null}
+                {storeDrillState.cityLabel ? <span className="breadcrumb-chip">{storeDrillState.cityLabel}</span> : null}
+              </div>
+
+              {storeDrillState.level !== "state" ? (
+                <button type="button" className="secondary-button" onClick={handleRollUpStore}>
+                  Roll up khu vực
+                </button>
+              ) : null}
+            </div>
+
+            {tableView === "pivot" ? (
+              <>
+                <div className="olap-toolbar-row">
+                  <div className="olap-group">
+                    <span className="olap-group-label">Slice theo thời gian</span>
+                    <button
+                      type="button"
+                      className={`filter-pill ${selectedPivotTimeKeys.length === (pivot?.timeAxis.length ?? 0) ? "filter-pill-active" : ""}`}
+                      onClick={() => setSelectedPivotTimeKeys(pivot?.timeAxis.map((item) => item.key) ?? [])}
+                    >
+                      Tất cả
+                    </button>
+                    {pivot?.timeAxis.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        className={`filter-pill ${selectedPivotTimeKeys.includes(item.key) ? "filter-pill-active" : ""}`}
+                        onClick={() => toggleItem(selectedPivotTimeKeys, item.key, setSelectedPivotTimeKeys)}
+                      >
+                        {item.label}
+                      </button>
+                    )) ?? null}
+                  </div>
+                </div>
+
+                <div className="olap-toolbar-row">
+                  <div className="olap-group">
+                    <span className="olap-group-label">Dice theo khu vực</span>
+                    <button
+                      type="button"
+                      className={`filter-pill ${selectedPivotStoreKeys.length === (pivot?.storeAxis.length ?? 0) ? "filter-pill-active" : ""}`}
+                      onClick={() => setSelectedPivotStoreKeys(pivot?.storeAxis.map((item) => item.key) ?? [])}
+                    >
+                      Tất cả
+                    </button>
+                    {pivot?.storeAxis.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        className={`filter-pill ${selectedPivotStoreKeys.includes(item.key) ? "filter-pill-active" : ""}`}
+                        onClick={() => toggleItem(selectedPivotStoreKeys, item.key, setSelectedPivotStoreKeys)}
+                      >
+                        {item.label}
+                      </button>
+                    )) ?? null}
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
+
+          <div className="info-strip olap-info-strip">
+            <span className="info-pill">Số năm: {availableYears.length}</span>
+            {latestYear ? <span className="info-pill">Gần nhất: {latestYear.year}</span> : null}
+            <span className="info-pill">Mức thời gian: {getTimeLevelLabel(drillState.level)}</span>
+            <span className="info-pill">Mức khu vực: {getStoreLevelLabel(storeDrillState.level)}</span>
+            {activeTimeYearFilter ? <span className="info-pill">Lọc năm: {activeTimeYearFilter}</span> : null}
+            {activeTimeQuarterFilter ? <span className="info-pill">Lọc quý: Q{activeTimeQuarterFilter}</span> : null}
+            {storeDrillState.stateLabel ? <span className="info-pill">Lọc vùng: {storeDrillState.stateLabel}</span> : null}
+            {storeDrillState.cityLabel ? <span className="info-pill">Lọc thành phố: {storeDrillState.cityLabel}</span> : null}
+          </div>
+
+          {summaryError ? <p className="compact-error-text">{summaryError}</p> : null}
+          {activeTableError ? <p className="compact-error-text">{activeTableError}</p> : null}
+
+          {activeTableLoading ? (
+            <p className="muted">Đang tải dữ liệu bảng OLAP...</p>
+          ) : (
+            <div className="data-table-shell olap-table-shell compact-table-shell">
+              <table className="data-table compact-data-table">
+                {tableView === "time" ? (
+                  <>
+                    <thead>
+                      <tr>
+                        <th>{getTimeLevelLabel(breakdown?.level ?? "year")}</th>
+                        <th>Tồn kho TB</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {breakdown?.rows.map((row) => (
+                        <tr key={`${breakdown.level}-${row.key}`}>
+                          <td>{row.label}</td>
+                          <td>{formatNumber(row.averageInventory)} đơn vị</td>
+                          <td>
+                            {row.canDrillDown && breakdown.drillTargetLevel ? (
+                              <button type="button" className="secondary-button" onClick={() => handleDrillDown(row.key)}>
+                                {getDrillTargetLabel(breakdown.drillTargetLevel)}
+                              </button>
+                            ) : (
+                              <span className="muted">Mức cuối</span>
+                            )}
+                          </td>
+                        </tr>
+                      )) ?? null}
+                    </tbody>
+                  </>
+                ) : null}
+
+                {tableView === "store" ? (
+                  <>
+                    <thead>
+                      <tr>
+                        <th>{getStoreLevelLabel(storeBreakdown?.level ?? "state")}</th>
+                        <th>Tồn kho TB</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {storeBreakdown?.rows.map((row) => (
+                        <tr key={`${storeBreakdown.level}-${row.memberUniqueName}`}>
+                          <td>{row.label}</td>
+                          <td>{formatNumber(row.averageInventory)} đơn vị</td>
+                          <td>
+                            {row.canDrillDown && storeBreakdown.drillTargetLevel ? (
+                              <button type="button" className="secondary-button" onClick={() => handleStoreDrillDown(row)}>
+                                {getDrillTargetLabel(storeBreakdown.drillTargetLevel)}
+                              </button>
+                            ) : (
+                              <span className="muted">Mức cuối</span>
+                            )}
+                          </td>
+                        </tr>
+                      )) ?? null}
+                    </tbody>
+                  </>
+                ) : null}
+
+                {tableView === "pivot" ? (
+                  <>
+                    <thead>
+                      <tr>
+                        <th>{pivotOrientation === "rows-time" ? getTimeLevelLabel(pivot?.timeLevel ?? "year") : getStoreLevelLabel(pivot?.storeLevel ?? "state")}</th>
+                        {pivotColumns.map((item) => (
+                          <th key={item.key}>{item.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pivotRows.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.label}</td>
+                          {pivotColumns.map((column) => (
+                            <td key={`${row.key}-${column.key}`}>
+                              {pivotOrientation === "rows-time"
+                                ? getPivotValue(row.key, column.key)
+                                : getPivotValue(column.key, row.key)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                ) : null}
+              </table>
+            </div>
+          )}
         </div>
-
-        {pivotLoading ? (
-          <p className="muted">Loading pivot source rows from state-level yearly slices...</p>
-        ) : (
-          <div className="data-table-shell">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{pivotOrientation === "rows-years" ? "Year" : "Bang"}</th>
-                  {pivotColumnLabels.map((label) => (
-                    <th key={label}>{label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {pivotRowLabels.map((rowLabel) => (
-                  <tr key={rowLabel}>
-                    <td>{rowLabel}</td>
-                    {pivotColumnLabels.map((columnLabel) => {
-                      const value =
-                        pivotOrientation === "rows-years"
-                          ? getPivotValue(rowLabel, columnLabel)
-                          : getPivotValue(columnLabel, rowLabel);
-
-                      return <td key={`${rowLabel}-${columnLabel}`}>{formatNumber(value)}</td>;
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </SectionCard>
     </div>
   );

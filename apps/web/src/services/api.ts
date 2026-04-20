@@ -67,6 +67,32 @@ export type SalesStoreBreakdownResponse = {
   }>;
 };
 
+export type SalesPivotResponse = {
+  generatedAtUtc: string;
+  timeLevel: "year" | "quarter" | "month";
+  selectedYear: string | null;
+  selectedQuarter: string | null;
+  storeLevel: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  timeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  storeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  cells: Array<{
+    timeKey: string;
+    storeKey: string;
+    revenue: number;
+    salesVolume: number;
+  }>;
+};
+
 export type YearInventorySummaryResponse = {
   generatedAtUtc: string;
   rows: Array<{
@@ -104,6 +130,31 @@ export type InventoryStoreBreakdownResponse = {
   }>;
 };
 
+export type InventoryPivotResponse = {
+  generatedAtUtc: string;
+  timeLevel: "year" | "quarter" | "month";
+  selectedYear: string | null;
+  selectedQuarter: string | null;
+  storeLevel: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  timeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  storeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  cells: Array<{
+    timeKey: string;
+    storeKey: string;
+    averageInventory: number;
+  }>;
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5056";
 
 export async function getHealth(): Promise<HealthResponse> {
@@ -137,6 +188,8 @@ export async function getSalesTimeBreakdown(
   level: "year" | "quarter" | "month",
   year?: string,
   quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
 ): Promise<SalesTimeBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (year) {
@@ -144,6 +197,12 @@ export async function getSalesTimeBreakdown(
   }
   if (quarter) {
     params.set("quarter", quarter);
+  }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/sales/time-breakdown?${params.toString()}`);
@@ -159,6 +218,7 @@ export async function getSalesStoreBreakdown(
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
   year?: string,
+  quarter?: string,
 ): Promise<SalesStoreBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (stateMemberUniqueName) {
@@ -170,10 +230,43 @@ export async function getSalesStoreBreakdown(
   if (year) {
     params.set("year", year);
   }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/sales/store-breakdown?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Sales store breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getSalesPivot(
+  timeLevel: "year" | "quarter" | "month",
+  storeLevel: "state" | "city" | "store",
+  year?: string,
+  quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+): Promise<SalesPivotResponse> {
+  const params = new URLSearchParams({ timeLevel, storeLevel });
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/sales/pivot?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Sales pivot request failed with status ${response.status}`);
   }
 
   return response.json();
@@ -192,6 +285,8 @@ export async function getInventoryTimeBreakdown(
   level: "year" | "quarter" | "month",
   year?: string,
   quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
 ): Promise<InventoryTimeBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (year) {
@@ -199,6 +294,12 @@ export async function getInventoryTimeBreakdown(
   }
   if (quarter) {
     params.set("quarter", quarter);
+  }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/inventory/time-breakdown?${params.toString()}`);
@@ -214,6 +315,7 @@ export async function getInventoryStoreBreakdown(
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
   year?: string,
+  quarter?: string,
 ): Promise<InventoryStoreBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (stateMemberUniqueName) {
@@ -225,10 +327,43 @@ export async function getInventoryStoreBreakdown(
   if (year) {
     params.set("year", year);
   }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/inventory/store-breakdown?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Inventory store breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getInventoryPivot(
+  timeLevel: "year" | "quarter" | "month",
+  storeLevel: "state" | "city" | "store",
+  year?: string,
+  quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+): Promise<InventoryPivotResponse> {
+  const params = new URLSearchParams({ timeLevel, storeLevel });
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/inventory/pivot?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Inventory pivot request failed with status ${response.status}`);
   }
 
   return response.json();
