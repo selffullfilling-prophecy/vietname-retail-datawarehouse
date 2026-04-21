@@ -279,6 +279,48 @@ export function SalesPage() {
     tableView === "time" ? breakdownLoading : tableView === "store" ? storeBreakdownLoading : pivotLoading;
   const activeTableError =
     tableView === "time" ? breakdownError : tableView === "store" ? storeBreakdownError : pivotError;
+  const timeSliceOptions = useMemo(() => {
+    if (drillState.level === "year") {
+      return availableYears.map((year) => ({
+        key: year,
+        label: year,
+      }));
+    }
+
+    if (drillState.level === "quarter") {
+      return (
+        breakdown?.rows.map((row) => ({
+          key: row.key,
+          label: row.label,
+        })) ?? []
+      );
+    }
+
+    return [];
+  }, [availableYears, breakdown, drillState.level]);
+  const storeDiceOptions = useMemo(
+    () =>
+      storeBreakdown?.rows.map((row) => ({
+        key: row.memberUniqueName,
+        label: row.label,
+        memberUniqueName: row.memberUniqueName,
+      })) ?? [],
+    [storeBreakdown],
+  );
+  const currentTimeSliceLabel =
+    drillState.level === "year"
+      ? "Toàn bộ các năm"
+      : drillState.level === "quarter"
+        ? `Năm ${drillState.year}`
+        : `Năm ${drillState.year} / Q${drillState.quarter}`;
+  const currentStoreDiceLabel =
+    storeDrillState.level === "state"
+      ? "Toàn bộ khu vực"
+      : storeDrillState.level === "city"
+        ? (storeDrillState.stateLabel ?? "Toàn bộ khu vực")
+        : `${storeDrillState.stateLabel ?? ""}${storeDrillState.cityLabel ? ` / ${storeDrillState.cityLabel}` : ""}`;
+  const showTimeSliceControls = tableView !== "time" && timeSliceOptions.length > 0;
+  const showStoreDiceControls = tableView !== "store" && storeDiceOptions.length > 0;
   const timeContextLabel = useMemo(() => {
     if (drillState.level === "month" && drillState.year && drillState.quarter) {
       return `Năm ${drillState.year} / Q${drillState.quarter}, chi tiết theo tháng`;
@@ -341,16 +383,17 @@ export function SalesPage() {
     setter([...currentItems, nextItem]);
   }
 
+  function normalizeQuarterKey(key: string) {
+    const quarterMatches = key.match(/\d+/g);
+    return quarterMatches?.length ? quarterMatches[quarterMatches.length - 1] : key;
+  }
+
   function handleDrillDown(key: string) {
     if (!breakdown?.drillTargetLevel) {
       return;
     }
 
-    const quarterMatches = key.match(/\d+/g);
-    const normalizedQuarterKey =
-      breakdown.level === "quarter" && quarterMatches?.length
-        ? quarterMatches[quarterMatches.length - 1]
-        : key;
+    const normalizedQuarterKey = breakdown.level === "quarter" ? normalizeQuarterKey(key) : key;
 
     if (breakdown.level === "year") {
       setDrillState({
@@ -367,6 +410,28 @@ export function SalesPage() {
         quarter: normalizedQuarterKey,
       });
     }
+  }
+
+  function handleTimeSliceSelect(key: string) {
+    if (drillState.level === "year") {
+      setDrillState({
+        level: "quarter",
+        year: key,
+      });
+      return;
+    }
+
+    if (drillState.level === "quarter" && breakdown?.selectedYear) {
+      setDrillState({
+        level: "month",
+        year: breakdown.selectedYear,
+        quarter: normalizeQuarterKey(key),
+      });
+    }
+  }
+
+  function handleClearTimeSlice() {
+    setDrillState({ level: "year" });
   }
 
   function handleRollUpTime() {
@@ -404,6 +469,27 @@ export function SalesPage() {
         stateLabel: storeDrillState.stateLabel,
         cityMemberUniqueName: row.memberUniqueName,
         cityLabel: row.label,
+      });
+    }
+  }
+
+  function handleStoreDiceSelect(memberUniqueName: string, label: string) {
+    if (storeDrillState.level === "state") {
+      setStoreDrillState({
+        level: "city",
+        stateMemberUniqueName: memberUniqueName,
+        stateLabel: label,
+      });
+      return;
+    }
+
+    if (storeDrillState.level === "city" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
+      setStoreDrillState({
+        level: "store",
+        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+        stateLabel: storeDrillState.stateLabel,
+        cityMemberUniqueName: memberUniqueName,
+        cityLabel: label,
       });
     }
   }
@@ -638,6 +724,80 @@ export function SalesPage() {
               ) : null}
             </div>
 
+            {showTimeSliceControls || showStoreDiceControls ? (
+              <div className="olap-toolbar-row">
+                <p className="muted">
+                  Slice / dice là bộ lọc nhanh dùng chung ngữ cảnh drill hiện tại, giúp thu hẹp dữ liệu mà không phải dò lại toàn bộ bảng.
+                </p>
+              </div>
+            ) : null}
+
+            {showTimeSliceControls ? (
+              <div className="olap-toolbar-row">
+                <div className="olap-group">
+                  <span className="olap-group-label">Slice thời gian</span>
+                  <button
+                    type="button"
+                    className={`filter-pill ${drillState.level === "year" ? "filter-pill-active" : ""}`}
+                    onClick={handleClearTimeSlice}
+                  >
+                    Tất cả năm
+                  </button>
+                  {timeSliceOptions.map((option) => {
+                    const isActive =
+                      drillState.level === "quarter"
+                        ? drillState.year === option.key
+                        : drillState.level === "month"
+                          ? drillState.quarter === normalizeQuarterKey(option.key)
+                          : false;
+
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        className={`filter-pill ${isActive ? "filter-pill-active" : ""}`}
+                        onClick={() => handleTimeSliceSelect(option.key)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            {showStoreDiceControls ? (
+              <div className="olap-toolbar-row">
+                <div className="olap-group">
+                  <span className="olap-group-label">Dice khu vực</span>
+                  <button
+                    type="button"
+                    className={`filter-pill ${storeDrillState.level === "state" ? "filter-pill-active" : ""}`}
+                    onClick={() => setStoreDrillState({ level: "state" })}
+                  >
+                    Tất cả vùng
+                  </button>
+                  {storeDiceOptions.map((option) => {
+                    const isActive =
+                      storeDrillState.level === "city"
+                        ? storeDrillState.stateMemberUniqueName === option.memberUniqueName
+                        : storeDrillState.cityMemberUniqueName === option.memberUniqueName;
+
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        className={`filter-pill ${isActive ? "filter-pill-active" : ""}`}
+                        onClick={() => handleStoreDiceSelect(option.memberUniqueName, option.label)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
             {tableView === "pivot" ? (
               <>
                 <div className="olap-toolbar-row">
@@ -698,6 +858,8 @@ export function SalesPage() {
             {latestYear ? <span className="info-pill">Gần nhất: {latestYear.year}</span> : null}
             <span className="info-pill">Drill thời gian: {getTimeLevelLabel(drillState.level)}</span>
             <span className="info-pill">Drill khu vực: {getStoreLevelLabel(storeDrillState.level)}</span>
+            <span className="info-pill">Slice thời gian: {currentTimeSliceLabel}</span>
+            <span className="info-pill">Dice khu vực: {currentStoreDiceLabel}</span>
             <span className="info-pill">Ngữ cảnh thời gian: {timeContextLabel}</span>
             <span className="info-pill">Ngữ cảnh khu vực: {storeContextLabel}</span>
           </div>
