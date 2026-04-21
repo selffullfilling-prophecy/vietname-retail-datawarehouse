@@ -57,14 +57,15 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
-    public InventoryTimeBreakdownResult GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public InventoryTimeBreakdownResult GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         var normalizedLevel = NormalizeTimeLevel(level);
         var normalizedYear = NormalizeRequiredYear(year, normalizedLevel);
         var normalizedQuarter = NormalizeRequiredQuarter(quarter, normalizedLevel);
         var storeFilterExpression = BuildStoreFilterExpression(
             NormalizeOptionalUniqueName(stateMemberUniqueName),
-            NormalizeOptionalUniqueName(cityMemberUniqueName));
+            NormalizeOptionalUniqueName(cityMemberUniqueName),
+            NormalizeOptionalUniqueName(storeMemberUniqueName));
         var mdx = BuildTimeBreakdownMdx(normalizedLevel, normalizedYear, normalizedQuarter, storeFilterExpression);
 
         try
@@ -185,7 +186,7 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
-    public InventoryPivotResult GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public InventoryPivotResult GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         var normalizedTimeLevel = NormalizeTimeLevel(timeLevel);
         var normalizedYear = NormalizeRequiredYear(year, normalizedTimeLevel);
@@ -193,13 +194,15 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         var normalizedStoreLevel = NormalizeStoreLevel(storeLevel);
         var normalizedStateUniqueName = NormalizeStoreParentMember(stateMemberUniqueName, normalizedStoreLevel, "state");
         var normalizedCityUniqueName = NormalizeStoreParentMember(cityMemberUniqueName, normalizedStoreLevel, "city");
+        var normalizedStoreUniqueName = NormalizeOptionalUniqueName(storeMemberUniqueName);
         var mdx = BuildPivotMdx(
             normalizedTimeLevel,
             normalizedYear,
             normalizedQuarter,
             normalizedStoreLevel,
             normalizedStateUniqueName,
-            normalizedCityUniqueName);
+            normalizedCityUniqueName,
+            normalizedStoreUniqueName);
 
         try
         {
@@ -432,13 +435,13 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
             BuildWhereClause(timeFilterExpression));
     }
 
-    private static string BuildPivotMdx(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    private static string BuildPivotMdx(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         return string.Join(
             Environment.NewLine,
             "WITH",
             $"    SET [SelectedTimeMembers] AS {BuildTimeSetExpression(timeLevel, year, quarter)}",
-            $"    SET [SelectedStoreMembers] AS {BuildStoreSetExpression(storeLevel, stateMemberUniqueName, cityMemberUniqueName)}",
+            $"    SET [SelectedStoreMembers] AS {BuildStoreSetExpression(storeLevel, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName)}",
             "SELECT",
             "    {",
             "        [Measures].[Soluongtonkho]",
@@ -458,13 +461,15 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         };
     }
 
-    private static string BuildStoreSetExpression(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    private static string BuildStoreSetExpression(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName = null)
     {
         return level switch
         {
             "state" => "[Dim Store].[Hierarchy].[Bang].Members",
             "city" => $"Descendants(StrToMember('{EscapeMdxString(stateMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Thanhpho])",
-            "store" => $"Descendants(StrToMember('{EscapeMdxString(cityMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Macuahang])",
+            "store" => string.IsNullOrWhiteSpace(storeMemberUniqueName)
+                ? $"Descendants(StrToMember('{EscapeMdxString(cityMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Macuahang])"
+                : $"{{ StrToMember('{EscapeMdxString(storeMemberUniqueName)}', CONSTRAINED) }}",
             _ => throw new ArgumentOutOfRangeException(nameof(level))
         };
     }
@@ -484,9 +489,9 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         return $"Descendants([Dim Time].[Hierarchy].[Nam].&[{year}], [Dim Time].[Hierarchy].[Quy]).Item({int.Parse(quarter, CultureInfo.InvariantCulture) - 1})";
     }
 
-    private static string? BuildStoreFilterExpression(string? stateMemberUniqueName, string? cityMemberUniqueName)
+    private static string? BuildStoreFilterExpression(string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
-        var selectedMember = cityMemberUniqueName ?? stateMemberUniqueName;
+        var selectedMember = storeMemberUniqueName ?? cityMemberUniqueName ?? stateMemberUniqueName;
         if (string.IsNullOrWhiteSpace(selectedMember))
         {
             return null;

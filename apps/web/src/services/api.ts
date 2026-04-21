@@ -190,6 +190,7 @@ export async function getSalesTimeBreakdown(
   quarter?: string,
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
 ): Promise<SalesTimeBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (year) {
@@ -203,6 +204,9 @@ export async function getSalesTimeBreakdown(
   }
   if (cityMemberUniqueName) {
     params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/sales/time-breakdown?${params.toString()}`);
@@ -249,6 +253,7 @@ export async function getSalesPivot(
   quarter?: string,
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
 ): Promise<SalesPivotResponse> {
   const params = new URLSearchParams({ timeLevel, storeLevel });
   if (year) {
@@ -262,6 +267,9 @@ export async function getSalesPivot(
   }
   if (cityMemberUniqueName) {
     params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/sales/pivot?${params.toString()}`);
@@ -287,6 +295,7 @@ export async function getInventoryTimeBreakdown(
   quarter?: string,
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
 ): Promise<InventoryTimeBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (year) {
@@ -300,6 +309,9 @@ export async function getInventoryTimeBreakdown(
   }
   if (cityMemberUniqueName) {
     params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/inventory/time-breakdown?${params.toString()}`);
@@ -346,6 +358,7 @@ export async function getInventoryPivot(
   quarter?: string,
   stateMemberUniqueName?: string,
   cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
 ): Promise<InventoryPivotResponse> {
   const params = new URLSearchParams({ timeLevel, storeLevel });
   if (year) {
@@ -359,6 +372,9 @@ export async function getInventoryPivot(
   }
   if (cityMemberUniqueName) {
     params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/inventory/pivot?${params.toString()}`);

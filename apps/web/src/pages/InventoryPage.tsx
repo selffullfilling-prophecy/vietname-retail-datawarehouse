@@ -41,8 +41,10 @@ export function InventoryPage() {
     level: "state" | "city" | "store";
     stateMemberUniqueName?: string;
     cityMemberUniqueName?: string;
+    storeMemberUniqueName?: string;
     stateLabel?: string;
     cityLabel?: string;
+    storeLabel?: string;
   }>({ level: "state" });
 
   const activeTimeYearFilter =
@@ -54,6 +56,8 @@ export function InventoryPage() {
       : undefined;
   const activeCityFilter =
     storeDrillState.level === "store" ? storeDrillState.cityMemberUniqueName : undefined;
+  const activeStoreFilter =
+    storeDrillState.level === "store" ? storeDrillState.storeMemberUniqueName : undefined;
 
   useEffect(() => {
     let isMounted = true;
@@ -104,6 +108,7 @@ export function InventoryPage() {
           drillState.quarter,
           activeStateFilter,
           activeCityFilter,
+          activeStoreFilter,
         );
 
         if (!isMounted) {
@@ -130,7 +135,7 @@ export function InventoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [drillState, activeStateFilter, activeCityFilter]);
+  }, [drillState, activeStateFilter, activeCityFilter, activeStoreFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -189,6 +194,7 @@ export function InventoryPage() {
           drillState.quarter,
           storeDrillState.stateMemberUniqueName,
           storeDrillState.cityMemberUniqueName,
+          storeDrillState.storeMemberUniqueName,
         );
 
         if (!isMounted) {
@@ -319,7 +325,13 @@ export function InventoryPage() {
       ? "Toàn bộ khu vực"
       : storeDrillState.level === "city"
         ? (storeDrillState.stateLabel ?? "Toàn bộ khu vực")
-        : `${storeDrillState.stateLabel ?? ""}${storeDrillState.cityLabel ? ` / ${storeDrillState.cityLabel}` : ""}`;
+        : `${storeDrillState.stateLabel ?? ""}${storeDrillState.cityLabel ? ` / ${storeDrillState.cityLabel}` : ""}${storeDrillState.storeLabel ? ` / ${storeDrillState.storeLabel}` : ""}`;
+  const clearStoreDiceLabel =
+    storeDrillState.level === "store"
+      ? "Tất cả cửa hàng"
+      : storeDrillState.level === "city"
+        ? "Tất cả thành phố"
+        : "Tất cả vùng";
   const showTimeSliceControls = tableView !== "time" && timeSliceOptions.length > 0;
   const showStoreDiceControls = tableView !== "store" && storeDiceOptions.length > 0;
   const timeContextLabel = useMemo(() => {
@@ -335,7 +347,7 @@ export function InventoryPage() {
   }, [drillState]);
   const storeContextLabel = useMemo(() => {
     if (storeDrillState.level === "store" && storeDrillState.stateLabel && storeDrillState.cityLabel) {
-      return `${storeDrillState.stateLabel} / ${storeDrillState.cityLabel}`;
+      return `${storeDrillState.stateLabel} / ${storeDrillState.cityLabel}${storeDrillState.storeLabel ? ` / ${storeDrillState.storeLabel}` : ""}`;
     }
 
     if (
@@ -480,7 +492,56 @@ export function InventoryPage() {
         cityMemberUniqueName: memberUniqueName,
         cityLabel: label,
       });
+      return;
     }
+
+    if (
+      storeDrillState.level === "store" &&
+      storeDrillState.stateMemberUniqueName &&
+      storeDrillState.stateLabel &&
+      storeDrillState.cityMemberUniqueName &&
+      storeDrillState.cityLabel
+    ) {
+      setStoreDrillState({
+        level: "store",
+        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+        stateLabel: storeDrillState.stateLabel,
+        cityMemberUniqueName: storeDrillState.cityMemberUniqueName,
+        cityLabel: storeDrillState.cityLabel,
+        storeMemberUniqueName: memberUniqueName,
+        storeLabel: label,
+      });
+    }
+  }
+
+  function handleClearStoreDice() {
+    if (
+      storeDrillState.level === "store" &&
+      storeDrillState.stateMemberUniqueName &&
+      storeDrillState.stateLabel &&
+      storeDrillState.cityMemberUniqueName &&
+      storeDrillState.cityLabel
+    ) {
+      setStoreDrillState({
+        level: "store",
+        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+        stateLabel: storeDrillState.stateLabel,
+        cityMemberUniqueName: storeDrillState.cityMemberUniqueName,
+        cityLabel: storeDrillState.cityLabel,
+      });
+      return;
+    }
+
+    if (storeDrillState.level === "city" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
+      setStoreDrillState({
+        level: "city",
+        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
+        stateLabel: storeDrillState.stateLabel,
+      });
+      return;
+    }
+
+    setStoreDrillState({ level: "state" });
   }
 
   function handleRollUpStore() {
@@ -737,16 +798,24 @@ export function InventoryPage() {
                   <span className="olap-group-label">Dice khu vực</span>
                   <button
                     type="button"
-                    className={`filter-pill ${storeDrillState.level === "state" ? "filter-pill-active" : ""}`}
-                    onClick={() => setStoreDrillState({ level: "state" })}
+                    className={`filter-pill ${
+                      storeDrillState.level === "state" ||
+                      (storeDrillState.level === "city" && !storeDrillState.cityMemberUniqueName) ||
+                      (storeDrillState.level === "store" && !storeDrillState.storeMemberUniqueName)
+                        ? "filter-pill-active"
+                        : ""
+                    }`}
+                    onClick={handleClearStoreDice}
                   >
-                    Tất cả vùng
+                    {clearStoreDiceLabel}
                   </button>
                   {storeDiceOptions.map((option) => {
                     const isActive =
                       storeDrillState.level === "city"
                         ? storeDrillState.stateMemberUniqueName === option.memberUniqueName
-                        : storeDrillState.cityMemberUniqueName === option.memberUniqueName;
+                        : storeDrillState.level === "store"
+                          ? storeDrillState.storeMemberUniqueName === option.memberUniqueName
+                          : false;
 
                     return (
                       <button

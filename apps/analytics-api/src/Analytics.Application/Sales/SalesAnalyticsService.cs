@@ -21,9 +21,9 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             Rows: rows);
     }
 
-    public SalesTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public SalesTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
-        var result = _salesAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName);
+        var result = _salesAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);
 
         return new SalesTimeBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,
@@ -47,9 +47,9 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             Rows: result.Rows);
     }
 
-    public SalesPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public SalesPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
-        var result = _salesAnalyticsProvider.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName);
+        var result = _salesAnalyticsProvider.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);
 
         return new SalesPivotResponse(
             GeneratedAtUtc: DateTime.UtcNow,

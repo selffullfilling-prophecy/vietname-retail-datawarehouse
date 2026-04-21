@@ -21,9 +21,9 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             Rows: rows);
     }
 
-    public InventoryTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public InventoryTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
-        var result = _inventoryAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName);
+        var result = _inventoryAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);
 
         return new InventoryTimeBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,
@@ -47,9 +47,9 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             Rows: result.Rows);
     }
 
-    public InventoryPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    public InventoryPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
-        var result = _inventoryAnalyticsProvider.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName);
+        var result = _inventoryAnalyticsProvider.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);
 
         return new InventoryPivotResponse(
             GeneratedAtUtc: DateTime.UtcNow,

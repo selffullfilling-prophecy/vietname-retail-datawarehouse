@@ -29,9 +29,10 @@ public sealed class InventoryController : ControllerBase
         [FromQuery] string? year = null,
         [FromQuery] string? quarter = null,
         [FromQuery] string? stateMemberUniqueName = null,
-        [FromQuery] string? cityMemberUniqueName = null)
+        [FromQuery] string? cityMemberUniqueName = null,
+        [FromQuery] string? storeMemberUniqueName = null)
     {
-        return Ok(_inventoryAnalyticsService.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName));
+        return Ok(_inventoryAnalyticsService.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName));
     }
 
     [HttpGet("store-breakdown")]
@@ -54,8 +55,9 @@ public sealed class InventoryController : ControllerBase
         [FromQuery] string? quarter = null,
         [FromQuery] string storeLevel = "state",
         [FromQuery] string? stateMemberUniqueName = null,
-        [FromQuery] string? cityMemberUniqueName = null)
+        [FromQuery] string? cityMemberUniqueName = null,
+        [FromQuery] string? storeMemberUniqueName = null)
     {
-        return Ok(_inventoryAnalyticsService.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName));
+        return Ok(_inventoryAnalyticsService.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName));
     }
 }
