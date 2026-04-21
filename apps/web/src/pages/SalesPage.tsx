@@ -279,6 +279,37 @@ export function SalesPage() {
     tableView === "time" ? breakdownLoading : tableView === "store" ? storeBreakdownLoading : pivotLoading;
   const activeTableError =
     tableView === "time" ? breakdownError : tableView === "store" ? storeBreakdownError : pivotError;
+  const timeContextLabel = useMemo(() => {
+    if (drillState.level === "month" && drillState.year && drillState.quarter) {
+      return `Năm ${drillState.year} / Q${drillState.quarter}, chi tiết theo tháng`;
+    }
+
+    if (drillState.level === "quarter" && drillState.year) {
+      return `Năm ${drillState.year}, chi tiết theo quý`;
+    }
+
+    return "Toàn bộ các năm";
+  }, [drillState]);
+  const storeContextLabel = useMemo(() => {
+    if (storeDrillState.level === "store" && storeDrillState.stateLabel && storeDrillState.cityLabel) {
+      return `${storeDrillState.stateLabel} / ${storeDrillState.cityLabel}`;
+    }
+
+    if (
+      (storeDrillState.level === "city" || storeDrillState.level === "store") &&
+      storeDrillState.stateLabel
+    ) {
+      return storeDrillState.stateLabel;
+    }
+
+    return "Toàn bộ khu vực";
+  }, [storeDrillState]);
+  const activeContextTitle =
+    tableView === "time"
+      ? "Bảng thời gian vẫn đang giữ nguyên bộ lọc khu vực hiện tại."
+      : tableView === "store"
+        ? "Bảng khu vực vẫn đang giữ nguyên ngữ cảnh thời gian hiện tại."
+        : "Pivot đang kết hợp đồng thời cả thời gian lẫn khu vực.";
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
@@ -452,9 +483,9 @@ export function SalesPage() {
       <header className="page-header compact-page-header">
         <div>
           <p className="eyebrow">Phân tích bán hàng</p>
-          <h2>Drill down, slice/dice và pivot trong một bảng OLAP</h2>
+          <h2>Drill down và pivot trong một bảng OLAP</h2>
           <p className="muted">
-            Hai chiều thời gian và khu vực giờ dùng chung một ngữ cảnh phân tích nên drill và pivot không còn tách rời nhau.
+            Drill thời gian và khu vực vẫn dùng chung một ngữ cảnh phân tích, còn pivot chỉ đảm nhiệm việc xoay ma trận để đổi góc nhìn.
           </p>
         </div>
       </header>
@@ -483,7 +514,7 @@ export function SalesPage() {
 
       <SectionCard
         title="Bảng OLAP bán hàng"
-        description="Cùng một ngữ cảnh lọc được áp dụng cho bảng thời gian, bảng khu vực và ma trận pivot."
+        description="Drill thời gian và khu vực dùng chung ngữ cảnh; pivot chỉ đổi cách trình bày ma trận."
       >
         <div className="olap-card">
           <div className="olap-toolbar">
@@ -610,14 +641,18 @@ export function SalesPage() {
             {tableView === "pivot" ? (
               <>
                 <div className="olap-toolbar-row">
+                  <p className="muted">Bộ lọc dưới đây chỉ thu gọn phạm vi hiển thị của ma trận pivot, không thay đổi thao tác pivot.</p>
+                </div>
+
+                <div className="olap-toolbar-row">
                   <div className="olap-group">
-                    <span className="olap-group-label">Slice theo thời gian</span>
+                    <span className="olap-group-label">Hiển thị trục thời gian</span>
                     <button
                       type="button"
                       className={`filter-pill ${selectedPivotTimeKeys.length === (pivot?.timeAxis.length ?? 0) ? "filter-pill-active" : ""}`}
                       onClick={() => setSelectedPivotTimeKeys(pivot?.timeAxis.map((item) => item.key) ?? [])}
                     >
-                      Tất cả
+                      Tất cả mốc
                     </button>
                     {pivot?.timeAxis.map((item) => (
                       <button
@@ -634,13 +669,13 @@ export function SalesPage() {
 
                 <div className="olap-toolbar-row">
                   <div className="olap-group">
-                    <span className="olap-group-label">Dice theo khu vực</span>
+                    <span className="olap-group-label">Hiển thị trục khu vực</span>
                     <button
                       type="button"
                       className={`filter-pill ${selectedPivotStoreKeys.length === (pivot?.storeAxis.length ?? 0) ? "filter-pill-active" : ""}`}
                       onClick={() => setSelectedPivotStoreKeys(pivot?.storeAxis.map((item) => item.key) ?? [])}
                     >
-                      Tất cả
+                      Tất cả vùng
                     </button>
                     {pivot?.storeAxis.map((item) => (
                       <button
@@ -661,16 +696,21 @@ export function SalesPage() {
           <div className="info-strip olap-info-strip">
             <span className="info-pill">Số năm: {availableYears.length}</span>
             {latestYear ? <span className="info-pill">Gần nhất: {latestYear.year}</span> : null}
-            <span className="info-pill">Mức thời gian: {getTimeLevelLabel(drillState.level)}</span>
-            <span className="info-pill">Mức khu vực: {getStoreLevelLabel(storeDrillState.level)}</span>
-            {activeTimeYearFilter ? <span className="info-pill">Lọc năm: {activeTimeYearFilter}</span> : null}
-            {activeTimeQuarterFilter ? <span className="info-pill">Lọc quý: Q{activeTimeQuarterFilter}</span> : null}
-            {storeDrillState.stateLabel ? <span className="info-pill">Lọc vùng: {storeDrillState.stateLabel}</span> : null}
-            {storeDrillState.cityLabel ? <span className="info-pill">Lọc thành phố: {storeDrillState.cityLabel}</span> : null}
+            <span className="info-pill">Drill thời gian: {getTimeLevelLabel(drillState.level)}</span>
+            <span className="info-pill">Drill khu vực: {getStoreLevelLabel(storeDrillState.level)}</span>
+            <span className="info-pill">Ngữ cảnh thời gian: {timeContextLabel}</span>
+            <span className="info-pill">Ngữ cảnh khu vực: {storeContextLabel}</span>
           </div>
 
           {summaryError ? <p className="compact-error-text">{summaryError}</p> : null}
           {activeTableError ? <p className="compact-error-text">{activeTableError}</p> : null}
+
+          <div className="olap-context-summary">
+            <p className="olap-context-title">{activeContextTitle}</p>
+            <p className="muted">
+              Thời gian: {timeContextLabel}. Khu vực: {storeContextLabel}.
+            </p>
+          </div>
 
           {activeTableLoading ? (
             <p className="muted">Đang tải dữ liệu bảng OLAP...</p>

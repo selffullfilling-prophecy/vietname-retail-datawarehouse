@@ -390,6 +390,26 @@ a {
   margin-top: -2px;
 }
 
+.olap-context-summary {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(16, 33, 53, 0.04);
+  border: 1px solid rgba(16, 33, 53, 0.08);
+}
+
+.olap-context-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #102135;
+}
+
+.olap-context-summary .muted {
+  margin: 0;
+}
+
 .olap-table-shell {
   max-height: min(36vh, 320px);
 }
