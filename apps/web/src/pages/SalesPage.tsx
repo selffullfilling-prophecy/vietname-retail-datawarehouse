@@ -664,7 +664,8 @@ export function SalesPage() {
         description="Drill thời gian và khu vực dùng chung ngữ cảnh; pivot chỉ đổi cách trình bày ma trận."
       >
         <div className="olap-card">
-          <div className="olap-toolbar">
+          <aside className="olap-toolbar-panel">
+            <div className="olap-toolbar">
             <div className="olap-toolbar-row">
               <div className="olap-group">
                 <span className="olap-group-label">Góc nhìn</span>
@@ -920,9 +921,11 @@ export function SalesPage() {
                 </div>
               </>
             ) : null}
-          </div>
+            </div>
+          </aside>
 
-          <div className="info-strip olap-info-strip">
+          <div className="olap-data-panel">
+            <div className="info-strip olap-info-strip">
             <span className="info-pill">Số năm: {availableYears.length}</span>
             {latestYear ? <span className="info-pill">Gần nhất: {latestYear.year}</span> : null}
             <span className="info-pill">Drill thời gian: {getTimeLevelLabel(drillState.level)}</span>
@@ -1039,6 +1042,7 @@ export function SalesPage() {
               </table>
             </div>
           )}
+          </div>
         </div>
       </SectionCard>
     </div>
