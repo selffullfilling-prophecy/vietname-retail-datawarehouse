@@ -1,21 +1,17 @@
 import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Executive Overview", end: true },
-  { to: "/sales", label: "Sales Analysis" },
-  { to: "/inventory", label: "Inventory Analysis" }
+  { to: "/", label: "Tổng quan", end: true },
+  { to: "/sales", label: "Phân tích bán hàng" },
+  { to: "/inventory", label: "Phân tích tồn kho" },
 ];
 
 export function AppLayout() {
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <header className="topbar">
         <div className="brand-block">
-          <p className="eyebrow">DW Executive Analytics</p>
-          <h1>OLAP Control Room</h1>
-          <p className="muted">
-            SSAS-driven analytics for executive reporting, drill-down, and guided exploration.
-          </p>
+          <h1>Hệ thống quản trị điều hành</h1>
         </div>
 
         <nav className="nav-list">
@@ -24,13 +20,13 @@ export function AppLayout() {
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
               {item.label}
             </NavLink>
           ))}
         </nav>
-      </aside>
+      </header>
 
       <main className="content">
         <Outlet />

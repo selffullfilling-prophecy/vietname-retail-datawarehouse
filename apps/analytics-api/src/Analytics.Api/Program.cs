@@ -38,6 +38,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("WebClient");
 app.UseAuthorization();
+app.MapGet("/", () => Results.Redirect("/swagger"));
 app.MapControllers();
 
 app.Run();

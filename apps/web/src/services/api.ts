@@ -51,6 +51,48 @@ export type SalesTimeBreakdownResponse = {
   }>;
 };
 
+export type SalesStoreBreakdownResponse = {
+  generatedAtUtc: string;
+  level: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  drillTargetLevel: "city" | "store" | null;
+  rows: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string;
+    revenue: number;
+    salesVolume: number;
+    canDrillDown: boolean;
+  }>;
+};
+
+export type SalesPivotResponse = {
+  generatedAtUtc: string;
+  timeLevel: "year" | "quarter" | "month";
+  selectedYear: string | null;
+  selectedQuarter: string | null;
+  storeLevel: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  timeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  storeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  cells: Array<{
+    timeKey: string;
+    storeKey: string;
+    revenue: number;
+    salesVolume: number;
+  }>;
+};
+
 export type YearInventorySummaryResponse = {
   generatedAtUtc: string;
   rows: Array<{
@@ -70,6 +112,46 @@ export type InventoryTimeBreakdownResponse = {
     label: string;
     averageInventory: number;
     canDrillDown: boolean;
+  }>;
+};
+
+export type InventoryStoreBreakdownResponse = {
+  generatedAtUtc: string;
+  level: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  drillTargetLevel: "city" | "store" | null;
+  rows: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string;
+    averageInventory: number;
+    canDrillDown: boolean;
+  }>;
+};
+
+export type InventoryPivotResponse = {
+  generatedAtUtc: string;
+  timeLevel: "year" | "quarter" | "month";
+  selectedYear: string | null;
+  selectedQuarter: string | null;
+  storeLevel: "state" | "city" | "store";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  timeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  storeAxis: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string | null;
+  }>;
+  cells: Array<{
+    timeKey: string;
+    storeKey: string;
+    averageInventory: number;
   }>;
 };
 
@@ -106,6 +188,9 @@ export async function getSalesTimeBreakdown(
   level: "year" | "quarter" | "month",
   year?: string,
   quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
 ): Promise<SalesTimeBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (year) {
@@ -114,10 +199,82 @@ export async function getSalesTimeBreakdown(
   if (quarter) {
     params.set("quarter", quarter);
   }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/sales/time-breakdown?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Sales time breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getSalesStoreBreakdown(
+  level: "state" | "city" | "store",
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  year?: string,
+  quarter?: string,
+): Promise<SalesStoreBreakdownResponse> {
+  const params = new URLSearchParams({ level });
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/sales/store-breakdown?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Sales store breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getSalesPivot(
+  timeLevel: "year" | "quarter" | "month",
+  storeLevel: "state" | "city" | "store",
+  year?: string,
+  quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
+): Promise<SalesPivotResponse> {
+  const params = new URLSearchParams({ timeLevel, storeLevel });
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/sales/pivot?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Sales pivot request failed with status ${response.status}`);
   }
 
   return response.json();
@@ -136,6 +293,9 @@ export async function getInventoryTimeBreakdown(
   level: "year" | "quarter" | "month",
   year?: string,
   quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
 ): Promise<InventoryTimeBreakdownResponse> {
   const params = new URLSearchParams({ level });
   if (year) {
@@ -144,10 +304,82 @@ export async function getInventoryTimeBreakdown(
   if (quarter) {
     params.set("quarter", quarter);
   }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/inventory/time-breakdown?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Inventory time breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getInventoryStoreBreakdown(
+  level: "state" | "city" | "store",
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  year?: string,
+  quarter?: string,
+): Promise<InventoryStoreBreakdownResponse> {
+  const params = new URLSearchParams({ level });
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/inventory/store-breakdown?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Inventory store breakdown request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getInventoryPivot(
+  timeLevel: "year" | "quarter" | "month",
+  storeLevel: "state" | "city" | "store",
+  year?: string,
+  quarter?: string,
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  storeMemberUniqueName?: string,
+): Promise<InventoryPivotResponse> {
+  const params = new URLSearchParams({ timeLevel, storeLevel });
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
+  }
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (storeMemberUniqueName) {
+    params.set("storeMemberUniqueName", storeMemberUniqueName);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/inventory/pivot?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Inventory pivot request failed with status ${response.status}`);
   }
 
   return response.json();
