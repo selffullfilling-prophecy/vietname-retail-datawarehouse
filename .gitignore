@@ -9,3 +9,4 @@ apps/**/bin/
 apps/**/obj/
 apps/web/node_modules/
 apps/web/dist/
+node_modules

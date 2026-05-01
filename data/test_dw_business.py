@@ -9,6 +9,10 @@ from typing import List, Sequence
 from dotenv import load_dotenv
 import pyodbc
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from db_config import DB_NAME, DB_HOST, DB_PORT
 
 

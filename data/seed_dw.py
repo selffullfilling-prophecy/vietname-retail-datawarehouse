@@ -20,7 +20,9 @@ Nguyen tac:
 
 import argparse
 import os
+from pathlib import Path
 import random
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
@@ -28,6 +30,10 @@ from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 import pyodbc
 from faker import Faker
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from db_config import CONNECTION_STRING, SAFE_DATABASE_URL
 

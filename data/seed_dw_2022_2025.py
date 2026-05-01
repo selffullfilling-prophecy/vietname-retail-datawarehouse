@@ -10,7 +10,7 @@ from typing import Iterable, List, Sequence, Tuple
 
 from faker import Faker
 
-from seed_dw_2024_2025 import (
+from seed_dw import (
     CONNECTION_STRING,
     SAFE_DATABASE_URL,
     SCHEMA,
@@ -499,3 +499,4 @@ def main(argv: Iterable[str]) -> None:
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 import sys
 from typing import Iterable
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from db_config import CONNECTION_STRING, MASTER_CONNECTION_STRING, DB_NAME, DB_SCHEMA, SAFE_DATABASE_URL
 
@@ -103,50 +108,6 @@ CREATE TABLE {DB_SCHEMA}.fact_inventory_snapshot (
         FOREIGN KEY (productkey) REFERENCES {DB_SCHEMA}.dim_product(productkey)
 );
 
-CREATE INDEX idx_dim_time_year_quarter_month
-    ON {DB_SCHEMA}.dim_time(nam, quy, thang);
-
-CREATE INDEX idx_dim_product_mamh
-    ON {DB_SCHEMA}.dim_product(mamh);
-
-CREATE INDEX idx_dim_customer_makh
-    ON {DB_SCHEMA}.dim_customer(makh);
-
-CREATE INDEX idx_dim_customer_city_region
-    ON {DB_SCHEMA}.dim_customer(thanhpho, bang);
-
-CREATE INDEX idx_dim_store_macuahang
-    ON {DB_SCHEMA}.dim_store(macuahang);
-
-CREATE INDEX idx_dim_store_city_region
-    ON {DB_SCHEMA}.dim_store(thanhpho, bang);
-
-CREATE INDEX idx_fact_sale_timekey
-    ON {DB_SCHEMA}.fact_sale(timekey);
-
-CREATE INDEX idx_fact_sale_storekey
-    ON {DB_SCHEMA}.fact_sale(storekey);
-
-CREATE INDEX idx_fact_sale_customerkey
-    ON {DB_SCHEMA}.fact_sale(customerkey);
-
-CREATE INDEX idx_fact_sale_productkey
-    ON {DB_SCHEMA}.fact_sale(productkey);
-
-CREATE INDEX idx_fact_sale_store_product_time
-    ON {DB_SCHEMA}.fact_sale(storekey, productkey, timekey);
-
-CREATE INDEX idx_inventory_snapshot_timekey
-    ON {DB_SCHEMA}.fact_inventory_snapshot(timekey);
-
-CREATE INDEX idx_inventory_snapshot_storekey
-    ON {DB_SCHEMA}.fact_inventory_snapshot(storekey);
-
-CREATE INDEX idx_inventory_snapshot_productkey
-    ON {DB_SCHEMA}.fact_inventory_snapshot(productkey);
-
-CREATE INDEX idx_inventory_snapshot_store_product_time
-    ON {DB_SCHEMA}.fact_inventory_snapshot(storekey, productkey, timekey);
 """
 
 
@@ -192,7 +153,7 @@ def main(argv: Iterable[str]) -> int:
         conn = pyodbc.connect(CONNECTION_STRING, autocommit=False)
         run_sql(conn, DROP_TABLES_SQL, "Xoa schema cu")
         run_sql(conn, CREATE_SCHEMA_SQL, "Tao schema moi")
-        run_sql(conn, CREATE_TABLES_SQL, "Tao bang va index")
+        run_sql(conn, CREATE_TABLES_SQL, "Tao bang va rang buoc")
         conn.close()
     except Exception as exc:
         print(f"[ERROR] {exc}")
