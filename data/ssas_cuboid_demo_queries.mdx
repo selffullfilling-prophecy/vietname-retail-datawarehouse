@@ -1,0 +1,157 @@
+/*
+===============================================================================
+ssas_cuboid_demo_queries.mdx
+MDX demo queries for SSMS connected to Analysis Services.
+
+How to use:
+1. Connect SSMS to Analysis Services, not Database Engine.
+2. Select the deployed SSAS database.
+3. Replace placeholders below with actual cube/dimension/measure names from
+   Visual Studio/SSDT:
+   - [Retail Analytics Cube]
+   - [Measures].[TongTien]
+   - [Measures].[SoLuongBan]
+   - [Measures].[SoLuongTonKho]
+   - [Dim Time].[Nam].[Nam]
+   - [Dim Product].[Mamh].[Mamh]
+   - [Dim Store].[Macuahang].[Macuahang]
+   - [Dim Customer].[Makh].[Makh]
+4. These queries demonstrate 0D/1D/2D/3D/4D cuboid levels in SSAS browsing.
+===============================================================================
+*/
+
+-- ----------------------------------------------------------------------------
+-- 0D Sales cuboid: total sales and quantity, no dimension on axes.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[TongTien],
+    [Measures].[SoLuongBan]
+} ON COLUMNS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 1D Sales cuboid: Sales by Time.
+-- Replace the hierarchy level with the real Time hierarchy in your cube.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[TongTien],
+    [Measures].[SoLuongBan]
+} ON COLUMNS,
+NON EMPTY
+    [Dim Time].[Nam].[Nam].Members ON ROWS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 2D Sales cuboid: Sales by Time + Product.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[TongTien],
+    [Measures].[SoLuongBan]
+} ON COLUMNS,
+NON EMPTY
+(
+    [Dim Time].[Nam].[Nam].Members *
+    [Dim Product].[Mamh].[Mamh].Members
+) ON ROWS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 3D Sales cuboid: Sales by Time + Product + Store.
+-- Use TOPCOUNT to keep the demo readable.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[TongTien],
+    [Measures].[SoLuongBan]
+} ON COLUMNS,
+NON EMPTY
+TOPCOUNT(
+    (
+        [Dim Time].[Nam].[Nam].Members *
+        [Dim Product].[Mamh].[Mamh].Members *
+        [Dim Store].[Macuahang].[Macuahang].Members
+    ),
+    50,
+    [Measures].[TongTien]
+) ON ROWS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 4D Sales cuboid: Sales by Time + Product + Store + Customer.
+-- Use TOPCOUNT to keep the demo readable.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[TongTien],
+    [Measures].[SoLuongBan]
+} ON COLUMNS,
+NON EMPTY
+TOPCOUNT(
+    (
+        [Dim Time].[Nam].[Nam].Members *
+        [Dim Product].[Mamh].[Mamh].Members *
+        [Dim Store].[Macuahang].[Macuahang].Members *
+        [Dim Customer].[Makh].[Makh].Members
+    ),
+    50,
+    [Measures].[TongTien]
+) ON ROWS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 1D Inventory cuboid: Inventory by Time.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[SoLuongTonKho]
+} ON COLUMNS,
+NON EMPTY
+    [Dim Time].[Nam].[Nam].Members ON ROWS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 2D Inventory cuboid: Inventory by Store + Product.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[SoLuongTonKho]
+} ON COLUMNS,
+NON EMPTY
+TOPCOUNT(
+    (
+        [Dim Store].[Macuahang].[Macuahang].Members *
+        [Dim Product].[Mamh].[Mamh].Members
+    ),
+    50,
+    [Measures].[SoLuongTonKho]
+) ON ROWS
+FROM [Retail Analytics Cube];
+
+
+-- ----------------------------------------------------------------------------
+-- 3D Inventory cuboid: Inventory by Time + Store + Product.
+-- ----------------------------------------------------------------------------
+SELECT
+{
+    [Measures].[SoLuongTonKho]
+} ON COLUMNS,
+NON EMPTY
+TOPCOUNT(
+    (
+        [Dim Time].[Nam].[Nam].Members *
+        [Dim Store].[Macuahang].[Macuahang].Members *
+        [Dim Product].[Mamh].[Mamh].Members
+    ),
+    50,
+    [Measures].[SoLuongTonKho]
+) ON ROWS
+FROM [Retail Analytics Cube];
