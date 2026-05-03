@@ -1,0 +1,293 @@
+﻿<Dimension xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ddl2="http://schemas.microsoft.com/analysisservices/2003/engine/2" xmlns:ddl2_2="http://schemas.microsoft.com/analysisservices/2003/engine/2/2" xmlns:ddl100_100="http://schemas.microsoft.com/analysisservices/2008/engine/100/100" xmlns:ddl200="http://schemas.microsoft.com/analysisservices/2010/engine/200" xmlns:ddl200_200="http://schemas.microsoft.com/analysisservices/2010/engine/200/200" xmlns:ddl300="http://schemas.microsoft.com/analysisservices/2011/engine/300" xmlns:ddl300_300="http://schemas.microsoft.com/analysisservices/2011/engine/300/300" xmlns:ddl400="http://schemas.microsoft.com/analysisservices/2012/engine/400" xmlns:ddl400_400="http://schemas.microsoft.com/analysisservices/2012/engine/400/400" xmlns:ddl500="http://schemas.microsoft.com/analysisservices/2013/engine/500" xmlns:ddl500_500="http://schemas.microsoft.com/analysisservices/2013/engine/500/500" xmlns:dwd="http://schemas.microsoft.com/DataWarehouse/Designer/1.0" dwd:design-time-name="d650c3a7-3ace-471b-b6c4-1093ddc648ee" xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">
+  <ID>Dim Customer</ID>
+  <Name>Dim Customer</Name>
+  <CreatedTimestamp>0001-01-01T00:00:00Z</CreatedTimestamp>
+  <LastSchemaUpdate>0001-01-01T00:00:00Z</LastSchemaUpdate>
+  <Annotations>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:DiagramLayout</Name>
+      <Value>
+        <dds xmlns="">
+          <diagram fontclsid="{0BE35203-8F91-11CE-9DE3-00AA004BB851}" mouseiconclsid="{0BE35204-8F91-11CE-9DE3-00AA004BB851}" defaultlayout="MSDDS.Rectilinear" defaultlineroute="MSDDS.Rectilinear" version="7" nextobject="2" scale="100" pagebreakanchorx="0" pagebreakanchory="0" pagebreaksizex="0" pagebreaksizey="0" scrollleft="-3052" scrolltop="-6467" gridx="150" gridy="150" marginx="5000" marginy="5000" zoom="100" x="9144" y="9419" backcolor="16119285" defaultpersistence="2" PrintPageNumbersMode="3" PrintMarginTop="0" PrintMarginBottom="635" PrintMarginLeft="0" PrintMarginRight="0" marqueeselectionmode="0" mousepointer="0" snaptogrid="0" autotypeannotation="1" showscrollbars="1" viewpagebreaks="0" donotforceconnectorsbehindshapes="1" backpictureclsid="{00000000-0000-0000-0000-000000000000}">
+            <font>
+              <ddsxmlobjectstreamwrapper binary="010000009001b0300100065461686f6d61" />
+            </font>
+            <mouseicon>
+              <ddsxmlobjectstreamwrapper binary="6c74000000000000" />
+            </mouseicon>
+          </diagram>
+          <layoutmanager>
+            <ddsxmlobj />
+          </layoutmanager>
+          <ddscontrol controlprogid="DdsShapes.DdsObjectManagedBridge" tooltip="dim_customer" left="20" top="0" logicalid="1" controlid="1" masterid="0" hint1="0" hint2="0" width="3000" height="3387" noresize="0" nomove="0" nodefaultattachpoints="0" autodrag="1" usedefaultiddshape="1" selectable="1" showselectionhandles="1" allownudging="1" isannotation="0" dontautolayout="0" groupcollapsed="0" tabstop="1" visible="1" snaptogrid="0">
+            <control>
+              <ddsxmlobjectstreaminitwrapper binary="000e0000b80b00003b0d0000" />
+            </control>
+            <layoutobject>
+              <ddsxmlobj>
+                <property name="LogicalObject" value="dw_dim_customer" vartype="8" />
+              </ddsxmlobj>
+            </layoutobject>
+            <shape groupshapeid="0" groupnode="0" />
+          </ddscontrol>
+        </dds>
+      </Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:ShowFriendlyNames</Name>
+      <Value>true</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:ShowRelationshipNames</Name>
+      <Value>false</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:UseDiagramDefaultLayout</Name>
+      <Value>true</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:DiagramViewPortLeft</Name>
+      <Value>-3052</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:DiagramViewPortTop</Name>
+      <Value>-6467</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:DiagramBoundingLeft</Name>
+      <Value>20</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:DiagramBoundingTop</Name>
+      <Value>0</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:DiagramZoom</Name>
+      <Value>100</Value>
+    </Annotation>
+    <Annotation>
+      <Name>http://schemas.microsoft.com/DataWarehouse/Designer/1.0:ARDiagramLayout</Name>
+      <Value>
+        <DiagramLayout ZoomPercent="100" ViewPortX="0" ViewPortY="0" xmlns="">
+          <Shapes NodeWidth="148">
+            <Shape Id="Customerkey" Expanded="false">
+              <Attributes>
+                <Attribute Id="Customerkey" />
+                <Attribute Id="Iskhbuudien" />
+                <Attribute Id="Iskhdulich" />
+                <Attribute Id="Tenkh" />
+              </Attributes>
+              <Position x="20" y="20" />
+            </Shape>
+            <Shape Id="Makh" Expanded="false">
+              <Attributes>
+                <Attribute Id="Makh" />
+              </Attributes>
+              <Position x="210" y="20" />
+            </Shape>
+            <Shape Id="Thanhpho" Expanded="false">
+              <Attributes>
+                <Attribute Id="Thanhpho" />
+              </Attributes>
+              <Position x="400" y="20" />
+            </Shape>
+            <Shape Id="Bang" Expanded="false">
+              <Attributes>
+                <Attribute Id="Bang" />
+              </Attributes>
+              <Position x="590" y="20" />
+            </Shape>
+          </Shapes>
+        </DiagramLayout>
+      </Value>
+    </Annotation>
+  </Annotations>
+  <LastProcessed>0001-01-01T00:00:00Z</LastProcessed>
+  <State>Unprocessed</State>
+  <Source xsi:type="DataSourceViewBinding" dwd:design-time-name="0c6ecc2f-15c8-45e8-a9b8-fb2c06525183">
+    <DataSourceViewID>Datawarehouse</DataSourceViewID>
+  </Source>
+  <ErrorConfiguration dwd:design-time-name="68638e09-a04f-452d-a0d7-6462f9ef9702">
+    <KeyNotFound>ReportAndStop</KeyNotFound>
+    <KeyDuplicate>ReportAndStop</KeyDuplicate>
+    <NullKeyNotAllowed>ReportAndStop</NullKeyNotAllowed>
+  </ErrorConfiguration>
+  <CurrentStorageMode>Molap</CurrentStorageMode>
+  <Attributes>
+    <Attribute dwd:design-time-name="34241bb9-b0b8-458e-8a10-b2e9492ba849">
+      <ID>Customerkey</ID>
+      <Name>Customerkey</Name>
+      <Usage>Key</Usage>
+      <EstimatedCount>3000</EstimatedCount>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="21ab63d4-7243-4e2d-90bb-f5756780f6d3">
+          <DataType>Integer</DataType>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="07450f18-4dcc-4e45-af9a-3a9eae624b76">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>customerkey</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <AttributeRelationships>
+        <AttributeRelationship dwd:design-time-name="5e1597f2-56bb-4008-8972-497806e9e43c">
+          <AttributeID>Tenkh</AttributeID>
+          <Name>Tenkh</Name>
+        </AttributeRelationship>
+        <AttributeRelationship dwd:design-time-name="f3400250-a7bb-4a68-bd8c-65b2537fb226">
+          <AttributeID>Iskhdulich</AttributeID>
+          <Name>Iskhdulich</Name>
+        </AttributeRelationship>
+        <AttributeRelationship dwd:design-time-name="c0481991-9f3e-4305-89d8-d8df524f3939">
+          <AttributeID>Iskhbuudien</AttributeID>
+          <Name>Iskhbuudien</Name>
+        </AttributeRelationship>
+        <AttributeRelationship dwd:design-time-name="7dbc1d68-56a6-441d-9e65-30c712b08c46">
+          <AttributeID>Makh</AttributeID>
+          <Name>Makh</Name>
+        </AttributeRelationship>
+      </AttributeRelationships>
+      <OrderBy>Key</OrderBy>
+      <AttributeHierarchyVisible>false</AttributeHierarchyVisible>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+    <Attribute dwd:design-time-name="64bb931c-91ca-4cce-a792-cbc6a7160af8">
+      <ID>Makh</ID>
+      <Name>Makh</Name>
+      <EstimatedCount>3000</EstimatedCount>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="1504a7b2-9bc2-43d3-9a28-558185fb8ce0">
+          <DataType>WChar</DataType>
+          <DataSize>20</DataSize>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="f07e9108-883b-46e5-b602-5bb1022a1922">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>makh</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <AttributeRelationships>
+        <AttributeRelationship dwd:design-time-name="0f6cd24b-e9e1-409e-bff4-be26702fa85f">
+          <AttributeID>Thanhpho</AttributeID>
+          <Name>Thanhpho</Name>
+        </AttributeRelationship>
+      </AttributeRelationships>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+    <Attribute dwd:design-time-name="341b0631-70a0-4d41-b49f-c8b4258d31e4">
+      <ID>Tenkh</ID>
+      <Name>Tenkh</Name>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="ea9fee84-3cd8-49b4-a8a9-cab246b93ffe">
+          <DataType>WChar</DataType>
+          <DataSize>100</DataSize>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="49013518-2051-43ce-8816-9b38b2c8ce27">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>tenkh</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <OrderBy>Key</OrderBy>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+    <Attribute dwd:design-time-name="6365d900-054a-405f-80a5-6259f44cb154">
+      <ID>Thanhpho</ID>
+      <Name>Thanhpho</Name>
+      <EstimatedCount>32</EstimatedCount>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="fdccc099-e92a-4f0b-b9e2-c4cefb6202b3">
+          <DataType>WChar</DataType>
+          <DataSize>100</DataSize>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="cd5baae7-1f50-4bc8-af14-a331f3e9eabd">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>thanhpho</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <AttributeRelationships>
+        <AttributeRelationship dwd:design-time-name="5d8b4d0d-5bee-4606-a7f2-8d4f736edf3d">
+          <AttributeID>Bang</AttributeID>
+          <Name>Bang</Name>
+        </AttributeRelationship>
+      </AttributeRelationships>
+      <OrderBy>Key</OrderBy>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+    <Attribute dwd:design-time-name="7eae0fe7-a8e2-4f4b-a0dd-9c4c3806f643">
+      <ID>Bang</ID>
+      <Name>Bang</Name>
+      <EstimatedCount>3</EstimatedCount>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="1d1c225e-0ced-476c-a403-1be16ebcf1b5">
+          <DataType>WChar</DataType>
+          <DataSize>100</DataSize>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="3e2c65e1-b105-4138-8834-024447347b6b">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>bang</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <OrderBy>Key</OrderBy>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+    <Attribute dwd:design-time-name="c5f06a40-8f1a-48fb-b91f-f40395752a9c">
+      <ID>Iskhdulich</ID>
+      <Name>Iskhdulich</Name>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="9e32834e-a1f1-46bf-b668-14121ad2b1ca">
+          <DataType>Boolean</DataType>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="bfd09ff3-33d9-4bea-a361-6738e5bdcb01">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>iskhdulich</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <OrderBy>Key</OrderBy>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+    <Attribute dwd:design-time-name="414a403e-0fd2-4b26-b47f-e9782deee636">
+      <ID>Iskhbuudien</ID>
+      <Name>Iskhbuudien</Name>
+      <KeyColumns>
+        <KeyColumn dwd:design-time-name="c7443321-927d-461b-a175-123f87081f52">
+          <DataType>Boolean</DataType>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="ab0d7fc5-1cdc-4f9f-98d3-05d54fec35d8">
+            <TableID>dw_dim_customer</TableID>
+            <ColumnID>iskhbuudien</ColumnID>
+          </Source>
+        </KeyColumn>
+      </KeyColumns>
+      <OrderBy>Key</OrderBy>
+      <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
+      <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>
+    </Attribute>
+  </Attributes>
+  <Hierarchies>
+    <Hierarchy dwd:design-time-name="c5d78521-6839-4cd3-a7d3-1f16393d2359">
+      <ID>Hierarchy</ID>
+      <Name>Hierarchy</Name>
+      <Levels>
+        <Level dwd:design-time-name="133a9b35-6bca-48be-8b92-5bb5983091ff">
+          <ID>Bang</ID>
+          <Name>Bang</Name>
+          <SourceAttributeID>Bang</SourceAttributeID>
+        </Level>
+        <Level dwd:design-time-name="95861c24-5e06-43cc-bf7a-b8c4ab42fa82">
+          <ID>Thanhpho</ID>
+          <Name>Thanhpho</Name>
+          <SourceAttributeID>Thanhpho</SourceAttributeID>
+        </Level>
+        <Level dwd:design-time-name="a5c5df74-dce3-4a02-bc87-e6f559122978">
+          <ID>Makh</ID>
+          <Name>Makh</Name>
+          <SourceAttributeID>Makh</SourceAttributeID>
+        </Level>
+      </Levels>
+    </Hierarchy>
+  </Hierarchies>
+  <ddl300:ProcessingState>Unprocessed</ddl300:ProcessingState>
+</Dimension>

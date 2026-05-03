@@ -10,3 +10,16 @@ apps/**/obj/
 apps/web/node_modules/
 apps/web/dist/
 node_modules
+
+# Bỏ qua thư mục tạm của Visual Studio
+.vs/
+*.user
+*.suo
+*.dbmdl
+
+# Bỏ qua các thư mục build của SSAS / SSIS
+bin/
+obj/
+*.asdatabase
+*.deploymentoptions
+*.deploymenttargets

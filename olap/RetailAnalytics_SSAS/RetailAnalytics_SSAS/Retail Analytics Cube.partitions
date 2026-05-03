@@ -1,0 +1,838 @@
+﻿<Cube xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ddl2="http://schemas.microsoft.com/analysisservices/2003/engine/2" xmlns:ddl2_2="http://schemas.microsoft.com/analysisservices/2003/engine/2/2" xmlns:ddl100_100="http://schemas.microsoft.com/analysisservices/2008/engine/100/100" xmlns:ddl200="http://schemas.microsoft.com/analysisservices/2010/engine/200" xmlns:ddl200_200="http://schemas.microsoft.com/analysisservices/2010/engine/200/200" xmlns:ddl300="http://schemas.microsoft.com/analysisservices/2011/engine/300" xmlns:ddl300_300="http://schemas.microsoft.com/analysisservices/2011/engine/300/300" xmlns:ddl400="http://schemas.microsoft.com/analysisservices/2012/engine/400" xmlns:ddl400_400="http://schemas.microsoft.com/analysisservices/2012/engine/400/400" xmlns:ddl500="http://schemas.microsoft.com/analysisservices/2013/engine/500" xmlns:ddl500_500="http://schemas.microsoft.com/analysisservices/2013/engine/500/500" xmlns:dwd="http://schemas.microsoft.com/DataWarehouse/Designer/1.0" dwd:design-time-name="428222bf-d116-48c9-b1a6-449327603e5d" xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">
+  <ID>Retail Analytics Cube</ID>
+  <MeasureGroups>
+    <MeasureGroup>
+      <ID>Fact Inventory Snapshot</ID>
+      <Partitions>
+        <Partition dwd:design-time-name="6d7e4689-0ba7-4d8c-a931-2625432281e5">
+          <ID>Fact Inventory Snapshot</ID>
+          <Name>Fact Inventory Snapshot</Name>
+          <CreatedTimestamp>0001-01-01T00:00:00Z</CreatedTimestamp>
+          <LastSchemaUpdate>0001-01-01T00:00:00Z</LastSchemaUpdate>
+          <LastProcessed>0001-01-01T00:00:00Z</LastProcessed>
+          <State>Unprocessed</State>
+          <Source xsi:type="DsvTableBinding" dwd:design-time-name="2d448d8a-b634-4a53-b030-9e88d5bf1b23">
+            <DataSourceViewID>Datawarehouse</DataSourceViewID>
+            <TableID>dw_fact_inventory_snapshot</TableID>
+          </Source>
+          <StorageMode>Molap</StorageMode>
+          <CurrentStorageMode>Molap</CurrentStorageMode>
+          <ProcessingMode>Regular</ProcessingMode>
+          <EstimatedRows>905448</EstimatedRows>
+          <AggregationDesignID>AggregationDesign</AggregationDesignID>
+        </Partition>
+      </Partitions>
+      <AggregationDesigns>
+        <AggregationDesign>
+          <ID>AggregationDesign</ID>
+          <Name>AggregationDesign</Name>
+          <CreatedTimestamp>2026-05-02T17:18:00.236667Z</CreatedTimestamp>
+          <LastSchemaUpdate>2026-05-02T17:18:00.236667Z</LastSchemaUpdate>
+          <EstimatedRows>905448</EstimatedRows>
+          <Dimensions>
+            <Dimension>
+              <CubeDimensionID>Dim Product</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Productkey</AttributeID>
+                  <EstimatedCount>190</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Mamh</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Mota</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Kichco</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Trongluong</AttributeID>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+            <Dimension>
+              <CubeDimensionID>Dim Time</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Timekey</AttributeID>
+                  <EstimatedCount>48</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Thang</AttributeID>
+                  <EstimatedCount>48</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Quy</AttributeID>
+                  <EstimatedCount>16</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Nam</AttributeID>
+                  <EstimatedCount>4</EstimatedCount>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+            <Dimension>
+              <CubeDimensionID>Dim Store</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Storekey</AttributeID>
+                  <EstimatedCount>160</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Macuahang</AttributeID>
+                  <EstimatedCount>160</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Sodienthoai</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Thanhpho</AttributeID>
+                  <EstimatedCount>32</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Bang</AttributeID>
+                  <EstimatedCount>3</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Diachivp</AttributeID>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+          </Dimensions>
+          <Aggregations>
+            <Aggregation>
+              <ID>Aggregation 0</ID>
+              <Name>Aggregation 0</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Timekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Storekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 1</ID>
+              <Name>Aggregation 1</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Productkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Nam</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 2</ID>
+              <Name>Aggregation 2</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Productkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Quy</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 3</ID>
+              <Name>Aggregation 3</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 4</ID>
+              <Name>Aggregation 4</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Quy</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 5</ID>
+              <Name>Aggregation 5</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Timekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+          </Aggregations>
+        </AggregationDesign>
+      </AggregationDesigns>
+    </MeasureGroup>
+    <MeasureGroup>
+      <ID>Fact Sale</ID>
+      <Partitions>
+        <Partition dwd:design-time-name="8e2ef332-6c30-4fb2-9d33-5146a1d07770">
+          <ID>Fact Sale</ID>
+          <Name>Fact Sale</Name>
+          <CreatedTimestamp>0001-01-01T00:00:00Z</CreatedTimestamp>
+          <LastSchemaUpdate>0001-01-01T00:00:00Z</LastSchemaUpdate>
+          <LastProcessed>0001-01-01T00:00:00Z</LastProcessed>
+          <State>Unprocessed</State>
+          <Source xsi:type="DsvTableBinding" dwd:design-time-name="b8dd3385-b5a1-4f03-b843-5b29da15e15d">
+            <DataSourceViewID>Datawarehouse</DataSourceViewID>
+            <TableID>dw_fact_sale</TableID>
+          </Source>
+          <StorageMode>Molap</StorageMode>
+          <CurrentStorageMode>Molap</CurrentStorageMode>
+          <ProcessingMode>Regular</ProcessingMode>
+          <EstimatedRows>180455</EstimatedRows>
+          <AggregationDesignID>AggregationDesign</AggregationDesignID>
+        </Partition>
+      </Partitions>
+      <AggregationDesigns>
+        <AggregationDesign>
+          <ID>AggregationDesign</ID>
+          <Name>AggregationDesign</Name>
+          <CreatedTimestamp>2026-05-02T17:20:05.856667Z</CreatedTimestamp>
+          <LastSchemaUpdate>2026-05-02T17:20:05.856667Z</LastSchemaUpdate>
+          <EstimatedRows>180455</EstimatedRows>
+          <Dimensions>
+            <Dimension>
+              <CubeDimensionID>Dim Time</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Timekey</AttributeID>
+                  <EstimatedCount>48</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Thang</AttributeID>
+                  <EstimatedCount>48</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Quy</AttributeID>
+                  <EstimatedCount>16</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Nam</AttributeID>
+                  <EstimatedCount>4</EstimatedCount>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+            <Dimension>
+              <CubeDimensionID>Dim Store</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Storekey</AttributeID>
+                  <EstimatedCount>160</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Macuahang</AttributeID>
+                  <EstimatedCount>160</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Sodienthoai</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Thanhpho</AttributeID>
+                  <EstimatedCount>32</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Bang</AttributeID>
+                  <EstimatedCount>3</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Diachivp</AttributeID>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+            <Dimension>
+              <CubeDimensionID>Dim Customer</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Customerkey</AttributeID>
+                  <EstimatedCount>3000</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Makh</AttributeID>
+                  <EstimatedCount>3000</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Tenkh</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Thanhpho</AttributeID>
+                  <EstimatedCount>32</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Bang</AttributeID>
+                  <EstimatedCount>3</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Iskhdulich</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Iskhbuudien</AttributeID>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+            <Dimension>
+              <CubeDimensionID>Dim Product</CubeDimensionID>
+              <Attributes>
+                <Attribute>
+                  <AttributeID>Productkey</AttributeID>
+                  <EstimatedCount>190</EstimatedCount>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Mamh</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Mota</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Kichco</AttributeID>
+                </Attribute>
+                <Attribute>
+                  <AttributeID>Trongluong</AttributeID>
+                </Attribute>
+              </Attributes>
+            </Dimension>
+          </Dimensions>
+          <Aggregations>
+            <Aggregation>
+              <ID>Aggregation 0</ID>
+              <Name>Aggregation 0</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Nam</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Storekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 1</ID>
+              <Name>Aggregation 1</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Timekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 2</ID>
+              <Name>Aggregation 2</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Quy</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 3</ID>
+              <Name>Aggregation 3</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Timekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 4</ID>
+              <Name>Aggregation 4</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Productkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 5</ID>
+              <Name>Aggregation 5</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Nam</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 6</ID>
+              <Name>Aggregation 6</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Nam</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 7</ID>
+              <Name>Aggregation 7</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Nam</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Productkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 8</ID>
+              <Name>Aggregation 8</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Nam</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Productkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation 9</ID>
+              <Name>Aggregation 9</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation a</ID>
+              <Name>Aggregation a</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Quy</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Storekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation b</ID>
+              <Name>Aggregation b</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Customerkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation c</ID>
+              <Name>Aggregation c</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Quy</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Productkey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation d</ID>
+              <Name>Aggregation d</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Thanhpho</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+            <Aggregation>
+              <ID>Aggregation e</ID>
+              <Name>Aggregation e</Name>
+              <Dimensions>
+                <Dimension>
+                  <CubeDimensionID>Dim Time</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Timekey</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Store</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Customer</CubeDimensionID>
+                  <Attributes>
+                    <Attribute>
+                      <AttributeID>Bang</AttributeID>
+                    </Attribute>
+                  </Attributes>
+                </Dimension>
+                <Dimension>
+                  <CubeDimensionID>Dim Product</CubeDimensionID>
+                </Dimension>
+              </Dimensions>
+            </Aggregation>
+          </Aggregations>
+        </AggregationDesign>
+      </AggregationDesigns>
+    </MeasureGroup>
+  </MeasureGroups>
+</Cube>
