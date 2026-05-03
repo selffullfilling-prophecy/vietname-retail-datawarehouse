@@ -156,13 +156,14 @@ Gia tri development hien co:
 ```json
 {
   "Ssas": {
-    "DataSource": "DESKTOP-U4B019J\\DATAWAREHOUSE",
-    "Catalog": "olap1"
+    "DataSource": "localhost",
+    "Catalog": "RetailAnalytics_SSAS",
+    "Cube": "Retail Analytics Cube"
   }
 }
 ```
 
-Neu may cua ban khac, hay sua `DataSource` va `Catalog` cho dung voi instance SSAS local.
+Neu may cua ban khac, hay sua `DataSource`, `Catalog`, va `Cube` cho dung voi instance SSAS local. Co the override bang bien moi truong `SSAS_SERVER`, `SSAS_CATALOG`, va `SSAS_CUBE`.
 
 Chay API:
 
@@ -180,6 +181,7 @@ API mac dinh chay tai:
 Health check:
 
 - `http://localhost:5056/api/health`
+- SSAS smoke test: `http://localhost:5056/api/metadata/smoke-test`
 
 ## 7. Chay frontend React
 
@@ -246,6 +248,7 @@ Kiem tra:
 
 - `Ssas:DataSource` dung ten instance SSAS chua
 - `Ssas:Catalog` dung ten catalog da deploy chua
+- `Ssas:Cube` dung ten cube da deploy chua
 - cube da process xong chua
 - tai khoan Windows hien tai co quyen truy cap SSAS chua
 

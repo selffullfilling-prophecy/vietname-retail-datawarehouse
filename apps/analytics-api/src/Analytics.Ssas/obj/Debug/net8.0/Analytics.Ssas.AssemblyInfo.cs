@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Analytics.Ssas")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+243fdb897627d4a3b988a69a9fb92067042caaaa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b33e89536d1a20a0de9e2e60b0efd3ca497ca4c3")]
 [assembly: System.Reflection.AssemblyProductAttribute("Analytics.Ssas")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Analytics.Ssas")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

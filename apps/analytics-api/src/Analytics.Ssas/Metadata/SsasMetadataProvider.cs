@@ -1,6 +1,7 @@
 using Analytics.Contracts.Metadata;
 using Microsoft.AnalysisServices.AdomdClient;
 using System.Data;
+using System.Globalization;
 
 namespace Analytics.Ssas.Metadata;
 
@@ -29,6 +30,7 @@ public sealed class SsasMetadataProvider : ISsasMetadataProvider
             var cubes = cubeTable.Rows
                 .Cast<DataRow>()
                 .Where(IsVisibleUserCube)
+                .Where(MatchesConfiguredCube)
                 .Select(cubeRow => BuildCubeMetadata(cubeRow, dimensionTable, hierarchyTable, levelTable, measureTable))
                 .OrderBy(cube => cube.Name, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
@@ -37,16 +39,42 @@ public sealed class SsasMetadataProvider : ISsasMetadataProvider
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                $"Failed to read SSAS metadata from '{_settings.DataSource}' / catalog '{_settings.Catalog}'. " +
-                "Check that SSAS is running, the catalog name is correct, and the current Windows account can access Analysis Services.",
-                ex);
+            throw SsasError.MetadataFailed(_settings, ex);
+        }
+    }
+
+    public SsasSmokeTestResponse RunSmokeTest()
+    {
+        var basicMdx = $"SELECT {{}} ON COLUMNS FROM {_settings.CubeMdxIdentifier}";
+        var inventoryAverageMdx = $"SELECT {{[Measures].[Inventory Average Quantity]}} ON COLUMNS FROM {_settings.CubeMdxIdentifier}";
+
+        try
+        {
+            using var connection = new AdomdConnection(BuildConnectionString());
+            connection.Open();
+
+            var steps = new[]
+            {
+                ExecuteSmokeStep(connection, "Cube reachable", basicMdx, required: true),
+                ExecuteSmokeStep(connection, "Inventory average measure", inventoryAverageMdx, required: false)
+            };
+
+            return new SsasSmokeTestResponse(
+                GeneratedAtUtc: DateTime.UtcNow,
+                DataSource: _settings.DataSource,
+                Catalog: _settings.Catalog,
+                Cube: _settings.Cube,
+                Steps: steps);
+        }
+        catch (Exception ex)
+        {
+            throw SsasError.QueryFailed("SSAS smoke test", _settings, basicMdx, ex);
         }
     }
 
     private string BuildConnectionString()
     {
-        return $"Data Source={_settings.DataSource};Catalog={_settings.Catalog};";
+        return _settings.ConnectionString;
     }
 
     private static DataTable GetSchemaTable(AdomdConnection connection, Guid schemaGuid)
@@ -64,6 +92,47 @@ public sealed class SsasMetadataProvider : ISsasMetadataProvider
 
         var cubeSource = GetInt(row, "CUBE_SOURCE");
         return cubeSource is null or 1;
+    }
+
+    private bool MatchesConfiguredCube(DataRow row)
+    {
+        var cubeName = GetString(row, "CUBE_NAME");
+        var cubeCaption = GetString(row, "CUBE_CAPTION");
+
+        return string.Equals(cubeName, _settings.Cube, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(cubeCaption, _settings.Cube, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private SsasSmokeTestStepDto ExecuteSmokeStep(AdomdConnection connection, string name, string mdx, bool required)
+    {
+        try
+        {
+            using var command = new AdomdCommand(mdx, connection);
+            var cellSet = command.ExecuteCellSet();
+            var value = cellSet.Cells.Count > 0
+                ? Convert.ToString(cellSet.Cells[0].Value, CultureInfo.InvariantCulture)
+                : null;
+
+            return new SsasSmokeTestStepDto(
+                Name: name,
+                Mdx: mdx,
+                Succeeded: true,
+                Value: value,
+                Error: null);
+        }
+        catch (Exception ex) when (!required)
+        {
+            return new SsasSmokeTestStepDto(
+                Name: name,
+                Mdx: mdx,
+                Succeeded: false,
+                Value: null,
+                Error: $"{SsasError.Describe(ex)} {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            throw SsasError.QueryFailed(name, _settings, mdx, ex);
+        }
     }
 
     private static CubeMetadataDto BuildCubeMetadata(

@@ -5,6 +5,7 @@ export type HealthResponse = {
   ssas: {
     dataSource: string;
     catalog: string;
+    cube: string;
   };
 };
 

@@ -8,4 +8,5 @@ public sealed record HealthResponse(
 
 public sealed record SsasConnectionInfo(
     string DataSource,
-    string Catalog);
+    string Catalog,
+    string Cube);

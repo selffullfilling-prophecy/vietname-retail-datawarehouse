@@ -10,12 +10,14 @@ public static class DependencyInjection
     public static IServiceCollection AddSsasServices(
         this IServiceCollection services,
         string dataSource,
-        string catalog)
+        string catalog,
+        string cube)
     {
         services.AddSingleton(new SsasConnectionSettings
         {
             DataSource = dataSource,
-            Catalog = catalog
+            Catalog = catalog,
+            Cube = cube
         });
         services.AddScoped<IInventoryAnalyticsProvider, InventoryAnalyticsProvider>();
         services.AddScoped<ISsasMetadataProvider, SsasMetadataProvider>();

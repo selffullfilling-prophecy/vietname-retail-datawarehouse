@@ -322,7 +322,7 @@ export function DashboardPage() {
         >
           <div className="mini-cube-grid">
             <article className="mini-cube-card">
-              <p className="eyebrow">SalesCube</p>
+              <p className="eyebrow">Retail Analytics Cube</p>
               <h3>Top doanh thu</h3>
               <div className="data-table-shell mini-cube-table-shell">
                 <table className="data-table compact-data-table mini-data-table">
@@ -345,7 +345,7 @@ export function DashboardPage() {
             </article>
 
             <article className="mini-cube-card">
-              <p className="eyebrow">InventoryCube</p>
+              <p className="eyebrow">Retail Analytics Cube</p>
               <h3>Top tồn kho TB</h3>
               <div className="data-table-shell mini-cube-table-shell">
                 <table className="data-table compact-data-table mini-data-table">

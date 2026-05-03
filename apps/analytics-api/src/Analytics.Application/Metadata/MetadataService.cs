@@ -20,4 +20,9 @@ public sealed class MetadataService : IMetadataService
             GeneratedAtUtc: DateTime.UtcNow,
             Cubes: cubes);
     }
+
+    public SsasSmokeTestResponse RunSmokeTest()
+    {
+        return _ssasMetadataProvider.RunSmokeTest();
+    }
 }

@@ -5,4 +5,5 @@ namespace Analytics.Application.Metadata;
 public interface IMetadataService
 {
     MetadataOverviewResponse GetOverview();
+    SsasSmokeTestResponse RunSmokeTest();
 }
