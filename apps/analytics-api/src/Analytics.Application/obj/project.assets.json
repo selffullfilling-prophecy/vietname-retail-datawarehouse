@@ -582,19 +582,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\hoang\\.nuget\\packages\\": {}
+    "C:\\Users\\Admin\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Application\\Analytics.Application.csproj",
+      "projectUniqueName": "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Application\\Analytics.Application.csproj",
       "projectName": "Analytics.Application",
-      "projectPath": "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Application\\Analytics.Application.csproj",
-      "packagesPath": "C:\\Users\\hoang\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Application\\obj\\",
+      "projectPath": "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Application\\Analytics.Application.csproj",
+      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Application\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\hoang\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -606,11 +606,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Contracts\\Analytics.Contracts.csproj": {
-              "projectPath": "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Contracts\\Analytics.Contracts.csproj"
+            "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Contracts\\Analytics.Contracts.csproj": {
+              "projectPath": "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Contracts\\Analytics.Contracts.csproj"
             },
-            "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Ssas\\Analytics.Ssas.csproj": {
-              "projectPath": "C:\\Users\\hoang\\Documents\\DataWarehouse\\apps\\analytics-api\\src\\Analytics.Ssas\\Analytics.Ssas.csproj"
+            "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Ssas\\Analytics.Ssas.csproj": {
+              "projectPath": "C:\\Users\\Admin\\Documents\\vietname-retail-datawarehouse\\apps\\analytics-api\\src\\Analytics.Ssas\\Analytics.Ssas.csproj"
             }
           }
         }

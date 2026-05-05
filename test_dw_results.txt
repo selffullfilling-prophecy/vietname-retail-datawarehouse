@@ -1,0 +1,244 @@
+================================================================================
+SECTION A: DATA QUALITY CHECKS
+================================================================================
+
+-- A1. So dong tung bang
+-- Columns: table_name | row_count
+-- Rows returned: 6
+-- dim_time | 24
+-- dim_product | 180
+-- dim_customer | 3000
+-- dim_store | 160
+-- fact_sale | 89886
+-- fact_inventory_snapshot | 444816
+
+-- A2. DW co dung 2 nam du lieu
+-- Columns: min_nam | max_nam | so_nam
+-- Rows returned: 1
+-- 2024 | 2025 | 2
+
+-- A3. Kiem tra (nam, thang) trung lap (expect 0 rows)
+-- Columns: nam | thang | cnt
+-- Rows returned: 0
+
+-- A4. Kiem tra quarter khop month (expect 0 rows)
+-- Columns: timekey | thang | quy | expected_quy
+-- Rows returned: 0
+
+-- A5a. Orphan productkey in fact_sale (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A5b. Orphan timekey in fact_sale (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A5c. Orphan storekey in fact_sale (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A5d. Orphan customerkey in fact_sale (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A6a. Orphan timekey in inventory (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A6b. Orphan storekey in inventory (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A6c. Orphan productkey in inventory (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A7a. Duplicate mamh in dim_product (expect 0 rows)
+-- Columns: mamh | cnt
+-- Rows returned: 0
+
+-- A7b. Duplicate makh in dim_customer (expect 0 rows)
+-- Columns: makh | cnt
+-- Rows returned: 0
+
+-- A7c. Duplicate macuahang in dim_store (expect 0 rows)
+-- Columns: macuahang | cnt
+-- Rows returned: 0
+
+-- A8. KH khong thuoc loai nao (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A9. Thong ke 3 loai KH
+-- Columns: loai_kh | so_luong
+-- Rows returned: 3
+-- Du lich | 1200
+-- Ca hai | 600
+-- Buu dien | 1200
+
+-- A10. SDT sai dinh dang (expect 0 rows)
+-- Columns: storekey | macuahang | sodienthoai
+-- Rows returned: 0
+
+-- A11a. fact_sale: SL/tien khong hop le (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A11b. inventory: ton kho am (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A12. Don gia ban suy ra tu fact_sale phai duong (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A13. Cap (store,product) thieu snapshot (expect 0 rows)
+-- Columns: storekey | productkey | so_thang
+-- Rows returned: 0
+
+-- A14a. dim_customer: city/bang null/rong (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+-- A14b. dim_store: city/bang null/rong (expect 0)
+-- Columns: cnt
+-- Rows returned: 1
+-- 0
+
+================================================================================
+SECTION B: BUSINESS REQUIREMENT QUERIES
+================================================================================
+
+-- Req1. Cua hang + mat hang da ban + don gia ban binh quan (TOP 15)
+-- Columns: macuahang | thanhpho | bang | sodienthoai | mamh | mota | kichco | trongluong | don_gia_binh_quan
+-- Rows returned: 15
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0001 | Mặt hàng 001 | S | 3.23 | 386000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0002 | Mặt hàng 002 | M | 0.22 | 356000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0003 | Mặt hàng 003 | L | 1.45 | 206000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0004 | Mặt hàng 004 | XL | 1.19 | 386000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0005 | Mặt hàng 005 | XXL | 3.71 | 251000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0006 | Mặt hàng 006 | Free | 3.42 | 78000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0007 | Mặt hàng 007 | Nhỏ | 4.47 | 69000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0009 | Mặt hàng 009 | Lớn | 2.17 | 320967.98
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0010 | Mặt hàng 010 | S | 0.25 | 133000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0011 | Mặt hàng 011 | M | 1.17 | 21000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0012 | Mặt hàng 012 | L | 2.58 | 194000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0014 | Mặt hàng 014 | XXL | 1.07 | 444000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0016 | Mặt hàng 016 | Nhỏ | 2.77 | 429000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0017 | Mặt hàng 017 | Vừa | 1.18 | 169000.00
+-- CH0001 | Hà Nội | Miền Bắc | +84961355791 | MH0018 | Mặt hàng 018 | Lớn | 2.99 | 300000.00
+
+-- Req3. Cua hang ban mat hang dat boi KH00001 (TOP 15)
+-- Columns: macuahang | thanhpho | sodienthoai
+-- Rows returned: 15
+-- CH0001 | Hà Nội | +84961355791
+-- CH0002 | Hà Nội | +84835580596
+-- CH0003 | Hà Nội | +84902966618
+-- CH0004 | Hà Nội | +84770973306
+-- CH0005 | Hà Nội | +84327584194
+-- CH0006 | Hà Nội | +84703512853
+-- CH0007 | Hà Nội | +84962828735
+-- CH0008 | Hà Nội | +84882658100
+-- CH0009 | Hải Phòng | +84831477088
+-- CH0010 | Hải Phòng | +84367276470
+-- CH0011 | Hải Phòng | +84907204299
+-- CH0012 | Hải Phòng | +84797197852
+-- CH0013 | Hải Phòng | +84836430982
+-- CH0014 | Hải Phòng | +84320632925
+-- CH0015 | Quảng Ninh | +84853345615
+
+-- Req4. VP dai dien luu kho MH0001 > 100 (ky 202512, TOP 15)
+-- Columns: macuahang | diachivp | thanhpho | bang | soluongtonkho
+-- Rows returned: 15
+-- CH0008 | Văn phòng đại diện Hà Nội - Cửa hàng số 8 | Hà Nội | Miền Bắc | 971
+-- CH0043 | Văn phòng đại diện Thái Nguyên - Cửa hàng số 5 | Thái Nguyên | Miền Bắc | 966
+-- CH0156 | Văn phòng đại diện Rạch Giá - Cửa hàng số 3 | Rạch Giá | Miền Nam | 958
+-- CH0110 | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 2 | TP Hồ Chí Minh | Miền Nam | 958
+-- CH0109 | Văn phòng đại diện TP Hồ Chí Minh - Cửa hàng số 1 | TP Hồ Chí Minh | Miền Nam | 956
+-- CH0136 | Văn phòng đại diện Vũng Tàu - Cửa hàng số 5 | Vũng Tàu | Miền Nam | 951
+-- CH0027 | Văn phòng đại diện Hải Dương - Cửa hàng số 1 | Hải Dương | Miền Bắc | 946
+-- CH0134 | Văn phòng đại diện Vũng Tàu - Cửa hàng số 3 | Vũng Tàu | Miền Nam | 946
+-- CH0092 | Văn phòng đại diện Nha Trang - Cửa hàng số 2 | Nha Trang | Miền Trung | 941
+-- CH0152 | Văn phòng đại diện Mỹ Tho - Cửa hàng số 2 | Mỹ Tho | Miền Nam | 935
+-- CH0123 | Văn phòng đại diện Biên Hòa - Cửa hàng số 5 | Biên Hòa | Miền Nam | 932
+-- CH0143 | Văn phòng đại diện Cần Thơ - Cửa hàng số 3 | Cần Thơ | Miền Nam | 930
+-- CH0138 | Văn phòng đại diện Vũng Tàu - Cửa hàng số 7 | Vũng Tàu | Miền Nam | 919
+-- CH0024 | Văn phòng đại diện Bắc Ninh - Cửa hàng số 5 | Bắc Ninh | Miền Bắc | 917
+-- CH0127 | Văn phòng đại diện Thủ Dầu Một - Cửa hàng số 2 | Thủ Dầu Một | Miền Nam | 909
+
+-- Req6. Thanh pho/bang cua KH00001
+-- Columns: makh | tenkh | thanhpho | bang
+-- Rows returned: 1
+-- KH00001 | An Vũ | TP Hồ Chí Minh | Miền Nam
+
+-- Req7a. Ton kho MH0010 tai Ha Noi (thang 202512)
+-- Columns: macuahang | thanhpho | sodienthoai | mamh | mota | soluongtonkho
+-- Rows returned: 5
+-- CH0001 | Hà Nội | +84961355791 | MH0010 | Mặt hàng 010 | 451
+-- CH0002 | Hà Nội | +84835580596 | MH0010 | Mặt hàng 010 | 425
+-- CH0003 | Hà Nội | +84902966618 | MH0010 | Mặt hàng 010 | 573
+-- CH0004 | Hà Nội | +84770973306 | MH0010 | Mặt hàng 010 | 891
+-- CH0005 | Hà Nội | +84327584194 | MH0010 | Mặt hàng 010 | 611
+
+-- Req7b. AVG ton kho MH0010 tai Ha Noi (2024-2025)
+-- Columns: macuahang | thanhpho | mamh | mota | avg_ton_kho | min_ton_kho | max_ton_kho | so_ky
+-- Rows returned: 5
+-- CH0001 | Hà Nội | MH0010 | Mặt hàng 010 | 459.583333 | 451 | 468 | 24
+-- CH0002 | Hà Nội | MH0010 | Mặt hàng 010 | 433.208333 | 425 | 443 | 24
+-- CH0003 | Hà Nội | MH0010 | Mặt hàng 010 | 577.750000 | 573 | 589 | 24
+-- CH0004 | Hà Nội | MH0010 | Mặt hàng 010 | 900.916666 | 891 | 910 | 24
+-- CH0005 | Hà Nội | MH0010 | Mặt hàng 010 | 625.875000 | 611 | 637 | 24
+
+-- Req9a. KH Du lich (TOP 10)
+-- Columns: makh | tenkh | thanhpho | bang
+-- Rows returned: 10
+-- KH00001 | An Vũ | TP Hồ Chí Minh | Miền Nam
+-- KH00002 | Chị Lan Trần | Đà Lạt | Miền Trung
+-- KH00003 | Khoa Bùi | Cà Mau | Miền Nam
+-- KH00004 | Ngọc Trần | Hải Phòng | Miền Bắc
+-- KH00005 | Chị Vân Hoàng | Vinh | Miền Trung
+-- KH00006 | Vân Phạm | Thanh Hóa | Miền Trung
+-- KH00007 | Lâm Mai Hoàng | Vũng Tàu | Miền Nam
+-- KH00008 | Nam Lê | Nam Định | Miền Bắc
+-- KH00021 | Hạnh Hải Đặng | Rạch Giá | Miền Nam
+-- KH00022 | Mai Nguyễn | Mỹ Tho | Miền Nam
+
+-- Req9b. KH Buu dien (TOP 10)
+-- Columns: makh | tenkh | thanhpho | bang
+-- Rows returned: 10
+-- KH00009 | Thành Đức Lê | Bắc Ninh | Miền Bắc
+-- KH00010 | Bà Hương Trần | Huế | Miền Trung
+-- KH00011 | Hà Phú Đặng | Hà Tĩnh | Miền Trung
+-- KH00012 | Hưng Dương | Thái Nguyên | Miền Bắc
+-- KH00013 | Kim Trần | Nam Định | Miền Bắc
+-- KH00014 | Trọng Đặng | Mỹ Tho | Miền Nam
+-- KH00015 | Cô Ngọc Phạm | Đồng Hới | Miền Trung
+-- KH00016 | Vũ Phạm | Vũng Tàu | Miền Nam
+-- KH00029 | Ông Hưng Trần | Thanh Hóa | Miền Trung
+-- KH00030 | Chị Hải Bùi | Cà Mau | Miền Nam
+
+-- Req9c. KH Ca hai (TOP 10)
+-- Columns: makh | tenkh | thanhpho | bang
+-- Rows returned: 10
+-- KH00017 | Kim Vũ | Đà Nẵng | Miền Trung
+-- KH00018 | Bác Phúc Đặng | Hà Nội | Miền Bắc
+-- KH00019 | Trung Đức Trần | Sóc Trăng | Miền Nam
+-- KH00020 | Chị Bảo Dương | Thủ Dầu Một | Miền Nam
+-- KH00037 | Cô Hải Vũ | Tam Kỳ | Miền Trung
+-- KH00038 | Chị Linh Lê | TP Hồ Chí Minh | Miền Nam
+-- KH00039 | Duyên Đặng | Quảng Ninh | Miền Bắc
+-- KH00040 | Ông Tú Đặng | Thái Nguyên | Miền Bắc
+-- KH00057 | Thành Bảo Bùi | Cần Thơ | Miền Nam
+-- KH00058 | Ông Tú Nguyễn | Nam Định | Miền Bắc

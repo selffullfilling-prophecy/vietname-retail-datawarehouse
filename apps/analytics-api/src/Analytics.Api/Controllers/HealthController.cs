@@ -24,6 +24,6 @@ public sealed class HealthController : ControllerBase
             Status: "ok",
             Service: "analytics-api",
             TimeUtc: DateTime.UtcNow,
-            Ssas: new SsasConnectionInfo(_ssasOptions.DataSource, _ssasOptions.Catalog)));
+            Ssas: new SsasConnectionInfo(_ssasOptions.DataSource, _ssasOptions.Catalog, _ssasOptions.Cube)));
     }
 }

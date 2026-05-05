@@ -4,14 +4,23 @@ using Analytics.Ssas;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<SsasOptions>(
-    builder.Configuration.GetSection(SsasOptions.SectionName));
+var ssasOptions = builder.Configuration
+    .GetSection(SsasOptions.SectionName)
+    .Get<SsasOptions>() ?? new SsasOptions();
 
-var ssasDataSource = builder.Configuration["Ssas:DataSource"] ?? string.Empty;
-var ssasCatalog = builder.Configuration["Ssas:Catalog"] ?? string.Empty;
+ssasOptions.DataSource = ResolveSsasValue("SSAS_SERVER", ssasOptions.DataSource, SsasOptions.DefaultDataSource);
+ssasOptions.Catalog = ResolveSsasValue("SSAS_CATALOG", ssasOptions.Catalog, SsasOptions.DefaultCatalog);
+ssasOptions.Cube = ResolveSsasValue("SSAS_CUBE", ssasOptions.Cube, SsasOptions.DefaultCube);
+
+builder.Services.Configure<SsasOptions>(options =>
+{
+    options.DataSource = ssasOptions.DataSource;
+    options.Catalog = ssasOptions.Catalog;
+    options.Cube = ssasOptions.Cube;
+});
 
 builder.Services.AddAnalyticsApplication();
-builder.Services.AddSsasServices(ssasDataSource, ssasCatalog);
+builder.Services.AddSsasServices(ssasOptions.DataSource, ssasOptions.Catalog, ssasOptions.Cube);
 
 builder.Services.AddCors(options =>
 {
@@ -42,3 +51,14 @@ app.MapGet("/", () => Results.Redirect("/swagger"));
 app.MapControllers();
 
 app.Run();
+
+string ResolveSsasValue(string environmentKey, string? configuredValue, string defaultValue)
+{
+    var environmentValue = builder.Configuration[environmentKey];
+    if (!string.IsNullOrWhiteSpace(environmentValue))
+    {
+        return environmentValue;
+    }
+
+    return string.IsNullOrWhiteSpace(configuredValue) ? defaultValue : configuredValue;
+}

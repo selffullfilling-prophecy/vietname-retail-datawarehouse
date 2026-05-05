@@ -16,17 +16,17 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
 
     public IReadOnlyList<YearSalesSummaryRowDto> GetSummaryByYear()
     {
-        const string mdx = """
-            SELECT
-                {
-                    [Measures].[Tongtien],
-                    [Measures].[Soluongban]
-                } ON COLUMNS,
-                NON EMPTY
-                    [Dim Time].[Nam].[Nam].Members
-                ON ROWS
-            FROM [SaleCube]
-            """;
+        var mdx = string.Join(
+            Environment.NewLine,
+            "SELECT",
+            "    {",
+            "        [Measures].[Tongtien],",
+            "        [Measures].[Soluongban]",
+            "    } ON COLUMNS,",
+            "    NON EMPTY",
+            "        [Dim Time].[Nam].[Nam].Members",
+            "    ON ROWS",
+            $"FROM {_settings.CubeMdxIdentifier}");
 
         try
         {
@@ -53,10 +53,7 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                "Failed to query yearly sales summary from SSAS. " +
-                "Check the cube name, measure names, and the Dim Time year attribute path in the deployed model.",
-                ex);
+            throw SsasError.QueryFailed("Sales yearly summary query", _settings, mdx, ex);
         }
     }
 
@@ -113,10 +110,7 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                "Failed to query time breakdown from SalesCube. " +
-                "Check the Dim Time hierarchy paths, current time level, and active store filter context.",
-                ex);
+            throw SsasError.QueryFailed("Sales time breakdown query", _settings, mdx, ex);
         }
     }
 
@@ -186,10 +180,7 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                "Failed to query store breakdown from SalesCube. " +
-                "Check the Dim Store hierarchy path, selected parent member, and active time filter context.",
-                ex);
+            throw SsasError.QueryFailed("Sales store breakdown query", _settings, mdx, ex);
         }
     }
 
@@ -280,16 +271,13 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                "Failed to query pivot data from SalesCube. " +
-                "Check the combined time and store hierarchy paths used for the current OLAP context.",
-                ex);
+            throw SsasError.QueryFailed("Sales pivot query", _settings, mdx, ex);
         }
     }
 
     private string BuildConnectionString()
     {
-        return $"Data Source={_settings.DataSource};Catalog={_settings.Catalog};";
+        return _settings.ConnectionString;
     }
 
     private static string NormalizeTimeLevel(string level)
@@ -413,7 +401,7 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         return memberUniqueName;
     }
 
-    private static string BuildTimeBreakdownMdx(string level, string? year, string? quarter, string? storeFilterExpression)
+    private string BuildTimeBreakdownMdx(string level, string? year, string? quarter, string? storeFilterExpression)
     {
         return string.Join(
             Environment.NewLine,
@@ -425,11 +413,11 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
             "        [Measures].[Soluongban]",
             "    } ON COLUMNS,",
             "    NON EMPTY [SelectedTimeMembers] ON ROWS",
-            "FROM [SaleCube]",
+            $"FROM {_settings.CubeMdxIdentifier}",
             BuildWhereClause(storeFilterExpression));
     }
 
-    private static string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? timeFilterExpression)
+    private string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? timeFilterExpression)
     {
         return string.Join(
             Environment.NewLine,
@@ -441,11 +429,11 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
             "        [Measures].[Soluongban]",
             "    } ON COLUMNS,",
             "    NON EMPTY [SelectedStoreMembers] ON ROWS",
-            "FROM [SaleCube]",
+            $"FROM {_settings.CubeMdxIdentifier}",
             BuildWhereClause(timeFilterExpression));
     }
 
-    private static string BuildPivotMdx(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
+    private string BuildPivotMdx(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         return string.Join(
             Environment.NewLine,
@@ -458,7 +446,7 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
             "        [Measures].[Soluongban]",
             "    } ON COLUMNS,",
             "    NON EMPTY CrossJoin([SelectedTimeMembers], [SelectedStoreMembers]) ON ROWS",
-            "FROM [SaleCube]");
+            $"FROM {_settings.CubeMdxIdentifier}");
     }
 
     private static string BuildTimeSetExpression(string level, string? year, string? quarter)

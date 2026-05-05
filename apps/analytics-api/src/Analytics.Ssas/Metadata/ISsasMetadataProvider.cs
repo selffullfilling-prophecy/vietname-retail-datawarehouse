@@ -5,4 +5,5 @@ namespace Analytics.Ssas.Metadata;
 public interface ISsasMetadataProvider
 {
     IReadOnlyList<CubeMetadataDto> GetCubes();
+    SsasSmokeTestResponse RunSmokeTest();
 }

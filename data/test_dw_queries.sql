@@ -7,7 +7,8 @@
 -- ############################################################################
 -- SECTION A: DATA QUALITY CHECKS
 -- ############################################################################
-
+-- dùng lệnh sqlcmd -S localhost,1433 -U sa -P "MAT_KHAU_SA_CUA_BAN" -C -d datawarehouse -i data\test_dw_queries.sql -o data\test_dw_results.txt
+-- để chạy file, nhớ thay mật khẩu
 -- ----------------------------------------------------------------------------
 -- A1. Row count per table
 -- ----------------------------------------------------------------------------
@@ -25,8 +26,9 @@ SELECT 'fact_inventory_snapshot',  COUNT(*) FROM dw.fact_inventory_snapshot;
 GO
 
 -- ----------------------------------------------------------------------------
--- A2. Check DW has exactly 2 years of data
--- Expected: MIN(nam) = 2024, MAX(nam) = 2025, COUNT(DISTINCT nam) = 2
+-- A2. Check DW has exactly 4 years of data
+-- Expected after running seed_dw_2022_2025.py:
+-- MIN(nam) = 2022, MAX(nam) = 2025, COUNT(DISTINCT nam) = 4
 -- ----------------------------------------------------------------------------
 SELECT
     MIN(nam)            AS min_nam,
@@ -206,16 +208,30 @@ WHERE CAST(tongtien AS DECIMAL(18,4)) / NULLIF(soluongban, 0) <= 0;
 GO
 
 -- ----------------------------------------------------------------------------
--- A13. Check each (store, product) pair in inventory has snapshots for all 24 months
--- Expected: 0 rows (every pair should have exactly 24 monthly snapshots)
+-- A13. Check each active (store, product) pair in inventory has contiguous monthly snapshots
+-- Expected: 0 rows.
+-- Some products exist only in 2022-2023, while shared products may exist through 2025.
+-- Therefore the expected snapshot count depends on the active period of each pair.
 -- ----------------------------------------------------------------------------
+WITH inventory_span AS (
+    SELECT
+        fi.storekey,
+        fi.productkey,
+        MIN(DATEFROMPARTS(fi.timekey / 100, fi.timekey % 100, 1)) AS first_month,
+        MAX(DATEFROMPARTS(fi.timekey / 100, fi.timekey % 100, 1)) AS last_month,
+        COUNT(DISTINCT fi.timekey) AS so_thang
+    FROM dw.fact_inventory_snapshot fi
+    GROUP BY fi.storekey, fi.productkey
+)
 SELECT
-    fi.storekey,
-    fi.productkey,
-    COUNT(DISTINCT fi.timekey) AS so_thang
-FROM dw.fact_inventory_snapshot fi
-GROUP BY fi.storekey, fi.productkey
-HAVING COUNT(DISTINCT fi.timekey) != 24;
+    storekey,
+    productkey,
+    first_month,
+    last_month,
+    so_thang,
+    DATEDIFF(MONTH, first_month, last_month) + 1 AS expected_so_thang
+FROM inventory_span
+WHERE so_thang != DATEDIFF(MONTH, first_month, last_month) + 1;
 GO
 
 -- ----------------------------------------------------------------------------
@@ -364,7 +380,7 @@ GO
 -- ----------------------------------------------------------------------------
 DECLARE @MaMH     NVARCHAR(20)  = 'MH0010';
 DECLARE @ThanhPho NVARCHAR(100) = N'Hà Nội';
-DECLARE @TuThang  INT           = 202401;
+DECLARE @TuThang  INT           = 202201;
 DECLARE @DenThang INT           = 202512;
 
 SELECT

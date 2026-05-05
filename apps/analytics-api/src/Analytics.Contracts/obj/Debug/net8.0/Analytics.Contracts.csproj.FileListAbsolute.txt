@@ -10,3 +10,15 @@ C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Contract
 C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\refint\Analytics.Contracts.dll
 C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.pdb
 C:\Users\hoang\Documents\DataWarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\ref\Analytics.Contracts.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\bin\Debug\net8.0\Analytics.Contracts.deps.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\bin\Debug\net8.0\Analytics.Contracts.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\bin\Debug\net8.0\Analytics.Contracts.pdb
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.AssemblyInfoInputs.cache
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.AssemblyInfo.cs
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.sourcelink.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\refint\Analytics.Contracts.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.pdb
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\ref\Analytics.Contracts.dll

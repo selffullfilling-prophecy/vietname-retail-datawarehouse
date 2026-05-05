@@ -21,4 +21,11 @@ public sealed class MetadataController : ControllerBase
     {
         return Ok(_metadataService.GetOverview());
     }
+
+    [HttpGet("smoke-test")]
+    [ProducesResponseType(typeof(SsasSmokeTestResponse), StatusCodes.Status200OK)]
+    public ActionResult<SsasSmokeTestResponse> RunSmokeTest()
+    {
+        return Ok(_metadataService.RunSmokeTest());
+    }
 }
