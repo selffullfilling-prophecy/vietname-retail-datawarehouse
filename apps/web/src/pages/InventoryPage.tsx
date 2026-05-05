@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { InteractiveBarChart, type InteractiveChartDatum } from "../components/InteractiveBarChart";
 import { InteractiveTrendChart, type InteractiveTrendDatum } from "../components/InteractiveTrendChart";
 import { KpiCard } from "../components/KpiCard";
+import { QuickTimeFilter } from "../components/QuickTimeFilter";
 import { SectionCard } from "../components/SectionCard";
 import {
   getInventoryStoreBreakdown,
-  getInventorySummaryByYear,
   getInventoryTimeBreakdown,
   type InventoryStoreBreakdownResponse,
   type InventoryTimeBreakdownResponse,
-  type YearInventorySummaryResponse,
 } from "../services/api";
 
 type TimeState = {
@@ -27,50 +26,29 @@ type LocationState = {
   storeLabel?: string;
 };
 
+type YearChange = {
+  percent: number;
+  currentYear: string;
+  previousYear: string;
+};
+
+const QUICK_TIME_YEARS = ["2022", "2023", "2024", "2025"];
+
 export function InventoryPage() {
-  const [summary, setSummary] = useState<YearInventorySummaryResponse | null>(null);
   const [timeBreakdown, setTimeBreakdown] = useState<InventoryTimeBreakdownResponse | null>(null);
+  const [yearComparisonBreakdown, setYearComparisonBreakdown] = useState<InventoryTimeBreakdownResponse | null>(null);
   const [locationBreakdown, setLocationBreakdown] = useState<InventoryStoreBreakdownResponse | null>(null);
   const [timeState, setTimeState] = useState<TimeState>({ level: "year" });
   const [locationState, setLocationState] = useState<LocationState>({});
   const [locationSearch, setLocationSearch] = useState("");
-  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [isTimeLoading, setIsTimeLoading] = useState(true);
+  const [isComparisonLoading, setIsComparisonLoading] = useState(true);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const locationLevel = getLocationLevel(locationState);
   const activeTimeYear = timeState.level === "quarter" || timeState.level === "month" ? timeState.year : undefined;
   const activeTimeQuarter = timeState.level === "month" ? timeState.quarter : undefined;
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSummary() {
-      try {
-        setIsSummaryLoading(true);
-        const response = await getInventorySummaryByYear();
-
-        if (isMounted) {
-          setSummary(response);
-        }
-      } catch {
-        if (isMounted) {
-          setError("Không thể tải dữ liệu tồn kho. Vui lòng kiểm tra API.");
-        }
-      } finally {
-        if (isMounted) {
-          setIsSummaryLoading(false);
-        }
-      }
-    }
-
-    void loadSummary();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -112,6 +90,43 @@ export function InventoryPage() {
   useEffect(() => {
     let isMounted = true;
 
+    async function loadYearComparison() {
+      try {
+        setIsComparisonLoading(true);
+        setError(null);
+        const response = await getInventoryTimeBreakdown(
+          "year",
+          undefined,
+          undefined,
+          locationState.stateMemberUniqueName,
+          locationState.cityMemberUniqueName,
+          locationState.storeMemberUniqueName,
+        );
+
+        if (isMounted) {
+          setYearComparisonBreakdown(response);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Không thể tải dữ liệu tồn kho. Vui lòng kiểm tra API.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsComparisonLoading(false);
+        }
+      }
+    }
+
+    void loadYearComparison();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locationState]);
+
+  useEffect(() => {
+    let isMounted = true;
+
     async function loadLocationBreakdown() {
       try {
         setIsLocationLoading(true);
@@ -146,14 +161,10 @@ export function InventoryPage() {
   }, [activeTimeQuarter, activeTimeYear, locationLevel, locationState]);
 
   const currentAverageInventory = useMemo(() => average((timeBreakdown?.rows ?? []).map((row) => row.averageInventory)), [timeBreakdown]);
-  const latestYear = summary?.rows.length ? summary.rows[summary.rows.length - 1] : null;
-  const peakYear = useMemo(() => {
-    if (!summary?.rows.length) {
-      return null;
-    }
-
-    return [...summary.rows].sort((left, right) => right.averageInventory - left.averageInventory)[0];
-  }, [summary]);
+  const inventoryChange = useMemo(
+    () => getYearChange(yearComparisonBreakdown?.rows ?? [], timeState.year, (row) => row.averageInventory),
+    [timeState.year, yearComparisonBreakdown],
+  );
   const timeChartData = (timeBreakdown?.rows ?? []).map((row, index) => ({
     key: getTimeChartKey(row, index),
     label: getTimeDisplayLabel(row, index),
@@ -198,6 +209,13 @@ export function InventoryPage() {
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+  }
+
+  function formatPercent(value: number): string {
+    return `${value >= 0 ? "+" : ""}${new Intl.NumberFormat("vi-VN", {
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 1,
+    }).format(value)}%`;
   }
 
   function getQuarterNumber(row: InventoryTimeBreakdownResponse["rows"][number], index: number) {
@@ -313,6 +331,10 @@ export function InventoryPage() {
     setTimeState({ level: "year" });
   }
 
+  function selectQuickYear(year: string) {
+    setTimeState({ level: "quarter", year });
+  }
+
   function rollLocationUp() {
     if (locationState.storeMemberUniqueName) {
       setLocationState({
@@ -408,6 +430,12 @@ export function InventoryPage() {
           <h2>Theo dõi tồn kho trung bình theo thời gian và khu vực</h2>
           <p className="muted">Hai biểu đồ phối hợp để phát hiện khu vực hoặc cửa hàng cần chú ý.</p>
         </div>
+        <QuickTimeFilter
+          years={QUICK_TIME_YEARS}
+          activeYear={timeState.year}
+          onSelectAll={clearTime}
+          onSelectYear={selectQuickYear}
+        />
       </header>
 
       {error ? <p className="compact-error-text">{error}</p> : null}
@@ -419,19 +447,20 @@ export function InventoryPage() {
           hint={`Thời gian: ${timeContextLabel()}.`}
         />
         <KpiCard
-          label="Điểm cần chú ý"
+          label="Tăng/giảm tồn kho"
+          value={isComparisonLoading ? "Đang tải..." : inventoryChange ? formatPercent(inventoryChange.percent) : "--"}
+          hint="So với năm trước"
+          tone={inventoryChange ? (inventoryChange.percent >= 0 ? "positive" : "negative") : "neutral"}
+        />
+        <KpiCard
+          label="Khu vực tồn kho cao"
           value={topLocation?.label ?? "--"}
           hint={topLocation ? `${formatNumber(topLocation.averageInventory)} đơn vị` : "Đang chờ dữ liệu."}
         />
         <KpiCard
-          label="Năm cao nhất"
-          value={peakYear?.year ?? "--"}
-          hint={peakYear ? `${formatNumber(peakYear.averageInventory)} đơn vị` : "Đang chờ dữ liệu."}
-        />
-        <KpiCard
-          label="Năm mới nhất"
-          value={latestYear?.year ?? "--"}
-          hint={latestYear ? `${formatNumber(latestYear.averageInventory)} đơn vị` : "Đang chờ dữ liệu."}
+          label="Phạm vi đang xem"
+          value={timeContextLabel()}
+          hint={`Khu vực: ${locationContextLabel()}.`}
         />
       </div>
 
@@ -521,4 +550,48 @@ function average(values: number[]) {
   }
 
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function getYearChange<T extends { key: string; label: string }>(
+  rows: T[],
+  selectedYear: string | undefined,
+  getValue: (row: T) => number,
+): YearChange | null {
+  const orderedRows = rows
+    .map((row) => {
+      const year = extractYear(row.key) ?? extractYear(row.label);
+      return year ? { row, year } : null;
+    })
+    .filter((entry): entry is { row: T; year: string } => entry !== null)
+    .sort((left, right) => Number(left.year) - Number(right.year));
+
+  if (orderedRows.length < 2) {
+    return null;
+  }
+
+  const currentIndex = selectedYear
+    ? orderedRows.findIndex((entry) => entry.year === selectedYear)
+    : orderedRows.length - 1;
+
+  if (currentIndex <= 0) {
+    return null;
+  }
+
+  const current = orderedRows[currentIndex];
+  const previous = orderedRows[currentIndex - 1];
+  const previousValue = getValue(previous.row);
+
+  if (previousValue === 0) {
+    return null;
+  }
+
+  return {
+    percent: ((getValue(current.row) - previousValue) / previousValue) * 100,
+    currentYear: current.year,
+    previousYear: previous.year,
+  };
+}
+
+function extractYear(value: string): string | null {
+  return value.match(/(?:19|20)\d{2}/)?.[0] ?? null;
 }

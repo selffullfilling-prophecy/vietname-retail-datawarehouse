@@ -151,6 +151,14 @@ a {
   line-height: 1.2;
 }
 
+.kpi-card-positive .kpi-value {
+  color: #1f7a58;
+}
+
+.kpi-card-negative .kpi-value {
+  color: #b83232;
+}
+
 .kpi-hint {
   font-size: 0.84rem;
 }
@@ -661,6 +669,10 @@ body,
 }
 
 .executive-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
   padding: 20px;
   border: 1px solid rgba(16, 33, 53, 0.08);
   border-radius: 8px;
@@ -679,6 +691,24 @@ body,
   font-size: clamp(1.9rem, 3vw, 3rem);
   line-height: 1.08;
   color: #071c2b;
+}
+
+.quick-time-filter {
+  display: grid;
+  gap: 8px;
+  min-width: min(440px, 100%);
+}
+
+.quick-time-filter > span {
+  color: #57697d;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.quick-time-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .executive-kpi-grid {
@@ -721,6 +751,14 @@ body,
 .executive-page .kpi-value {
   color: #071c2b;
   font-size: clamp(1.25rem, 1.8vw, 1.8rem);
+}
+
+.executive-page .kpi-card-positive .kpi-value {
+  color: #1f7a58;
+}
+
+.executive-page .kpi-card-negative .kpi-value {
+  color: #b83232;
 }
 
 .analysis-context-bar {
@@ -928,5 +966,10 @@ body,
   .analysis-chart-grid,
   .executive-kpi-grid {
     grid-template-columns: 1fr;
+  }
+
+  .executive-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

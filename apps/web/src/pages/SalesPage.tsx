@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { InteractiveBarChart, type InteractiveChartDatum } from "../components/InteractiveBarChart";
 import { InteractiveTrendChart, type InteractiveTrendDatum } from "../components/InteractiveTrendChart";
 import { KpiCard } from "../components/KpiCard";
+import { QuickTimeFilter } from "../components/QuickTimeFilter";
 import { SectionCard } from "../components/SectionCard";
 import {
   getSalesStoreBreakdown,
@@ -27,15 +28,25 @@ type LocationState = {
   storeLabel?: string;
 };
 
+type YearChange = {
+  percent: number;
+  currentYear: string;
+  previousYear: string;
+};
+
+const QUICK_TIME_YEARS = ["2022", "2023", "2024", "2025"];
+
 export function SalesPage() {
   const [summary, setSummary] = useState<YearSalesSummaryResponse | null>(null);
   const [timeBreakdown, setTimeBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
+  const [yearComparisonBreakdown, setYearComparisonBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
   const [locationBreakdown, setLocationBreakdown] = useState<SalesStoreBreakdownResponse | null>(null);
   const [timeState, setTimeState] = useState<TimeState>({ level: "year" });
   const [locationState, setLocationState] = useState<LocationState>({});
   const [locationSearch, setLocationSearch] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [isTimeLoading, setIsTimeLoading] = useState(true);
+  const [isComparisonLoading, setIsComparisonLoading] = useState(true);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,6 +123,43 @@ export function SalesPage() {
   useEffect(() => {
     let isMounted = true;
 
+    async function loadYearComparison() {
+      try {
+        setIsComparisonLoading(true);
+        setError(null);
+        const response = await getSalesTimeBreakdown(
+          "year",
+          undefined,
+          undefined,
+          locationState.stateMemberUniqueName,
+          locationState.cityMemberUniqueName,
+          locationState.storeMemberUniqueName,
+        );
+
+        if (isMounted) {
+          setYearComparisonBreakdown(response);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Không thể tải dữ liệu doanh thu. Vui lòng kiểm tra API.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsComparisonLoading(false);
+        }
+      }
+    }
+
+    void loadYearComparison();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locationState]);
+
+  useEffect(() => {
+    let isMounted = true;
+
     async function loadLocationBreakdown() {
       try {
         setIsLocationLoading(true);
@@ -154,7 +202,10 @@ export function SalesPage() {
     [timeBreakdown],
   );
   const summaryTotal = useMemo(() => summary?.rows.reduce((sum, row) => sum + row.revenue, 0) ?? 0, [summary]);
-  const latestYear = summary?.rows.length ? summary.rows[summary.rows.length - 1] : null;
+  const revenueGrowth = useMemo(
+    () => getYearChange(yearComparisonBreakdown?.rows ?? [], timeState.year, (row) => row.revenue),
+    [timeState.year, yearComparisonBreakdown],
+  );
   const timeChartData = (timeBreakdown?.rows ?? []).map((row, index) => ({
     key: getTimeChartKey(row, index),
     label: getTimeDisplayLabel(row, index),
@@ -223,6 +274,13 @@ export function SalesPage() {
     }
 
     return `${formatNumber(value)} VNĐ`;
+  }
+
+  function formatPercent(value: number): string {
+    return `${value >= 0 ? "+" : ""}${new Intl.NumberFormat("vi-VN", {
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 1,
+    }).format(value)}%`;
   }
 
   function getQuarterNumber(row: SalesTimeBreakdownResponse["rows"][number], index: number) {
@@ -338,6 +396,10 @@ export function SalesPage() {
     setTimeState({ level: "year" });
   }
 
+  function selectQuickYear(year: string) {
+    setTimeState({ level: "quarter", year });
+  }
+
   function rollLocationUp() {
     if (locationState.storeMemberUniqueName) {
       setLocationState({
@@ -433,6 +495,12 @@ export function SalesPage() {
           <h2>Phân tích doanh thu theo thời gian và khu vực</h2>
           <p className="muted">Hai biểu đồ phối hợp: thời gian được lọc bởi khu vực, khu vực được lọc bởi thời gian.</p>
         </div>
+        <QuickTimeFilter
+          years={QUICK_TIME_YEARS}
+          activeYear={timeState.year}
+          onSelectAll={clearTime}
+          onSelectYear={selectQuickYear}
+        />
       </header>
 
       {error ? <p className="compact-error-text">{error}</p> : null}
@@ -444,6 +512,12 @@ export function SalesPage() {
           hint={`Thời gian: ${timeContextLabel()}.`}
         />
         <KpiCard
+          label="Tăng trưởng doanh thu"
+          value={isComparisonLoading ? "Đang tải..." : revenueGrowth ? formatPercent(revenueGrowth.percent) : "--"}
+          hint="So với năm trước"
+          tone={revenueGrowth ? (revenueGrowth.percent >= 0 ? "positive" : "negative") : "neutral"}
+        />
+        <KpiCard
           label="Sản lượng bán"
           value={isTimeLoading ? "Đang tải..." : `${formatNumber(timeVolume)} đơn vị`}
           hint={`Khu vực: ${locationContextLabel()}.`}
@@ -452,11 +526,6 @@ export function SalesPage() {
           label="Khu vực dẫn đầu"
           value={topLocation?.label ?? "--"}
           hint={topLocation ? formatCurrencyCompact(topLocation.revenue) : "Đang chờ dữ liệu."}
-        />
-        <KpiCard
-          label="Năm mới nhất"
-          value={latestYear?.year ?? "--"}
-          hint={latestYear ? formatCurrencyCompact(latestYear.revenue) : "Đang chờ dữ liệu."}
         />
       </div>
 
@@ -539,4 +608,48 @@ function getLocationLevel(locationState: LocationState): "state" | "city" | "sto
   }
 
   return "state";
+}
+
+function getYearChange<T extends { key: string; label: string }>(
+  rows: T[],
+  selectedYear: string | undefined,
+  getValue: (row: T) => number,
+): YearChange | null {
+  const orderedRows = rows
+    .map((row) => {
+      const year = extractYear(row.key) ?? extractYear(row.label);
+      return year ? { row, year } : null;
+    })
+    .filter((entry): entry is { row: T; year: string } => entry !== null)
+    .sort((left, right) => Number(left.year) - Number(right.year));
+
+  if (orderedRows.length < 2) {
+    return null;
+  }
+
+  const currentIndex = selectedYear
+    ? orderedRows.findIndex((entry) => entry.year === selectedYear)
+    : orderedRows.length - 1;
+
+  if (currentIndex <= 0) {
+    return null;
+  }
+
+  const current = orderedRows[currentIndex];
+  const previous = orderedRows[currentIndex - 1];
+  const previousValue = getValue(previous.row);
+
+  if (previousValue === 0) {
+    return null;
+  }
+
+  return {
+    percent: ((getValue(current.row) - previousValue) / previousValue) * 100,
+    currentYear: current.year,
+    previousYear: previous.year,
+  };
+}
+
+function extractYear(value: string): string | null {
+  return value.match(/(?:19|20)\d{2}/)?.[0] ?? null;
 }
