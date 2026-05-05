@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Tổng quan", end: true },
-  { to: "/sales", label: "Phân tích bán hàng" },
-  { to: "/inventory", label: "Phân tích tồn kho" },
+  { to: "/", label: "Tổng quan điều hành", end: true },
+  { to: "/sales", label: "Doanh thu" },
+  { to: "/inventory", label: "Tồn kho" },
+  { to: "/advanced", label: "Phân tích nâng cao" },
 ];
 
 export function AppLayout() {
@@ -12,6 +13,7 @@ export function AppLayout() {
       <header className="topbar">
         <div className="brand-block">
           <h1>Hệ thống quản trị điều hành</h1>
+          <span>Trung tâm phân tích bán lẻ</span>
         </div>
 
         <nav className="nav-list">
