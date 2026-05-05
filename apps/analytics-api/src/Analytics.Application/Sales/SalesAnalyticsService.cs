@@ -47,6 +47,19 @@ public sealed class SalesAnalyticsService : ISalesAnalyticsService
             Rows: result.Rows);
     }
 
+    public SalesCustomerBreakdownResponse GetCustomerBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter)
+    {
+        var result = _salesAnalyticsProvider.GetCustomerBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year, quarter);
+
+        return new SalesCustomerBreakdownResponse(
+            GeneratedAtUtc: DateTime.UtcNow,
+            Level: result.Level,
+            SelectedStateLabel: result.SelectedStateLabel,
+            SelectedCityLabel: result.SelectedCityLabel,
+            DrillTargetLevel: result.DrillTargetLevel,
+            Rows: result.Rows);
+    }
+
     public SalesPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         var result = _salesAnalyticsProvider.GetPivot(timeLevel, year, quarter, storeLevel, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);

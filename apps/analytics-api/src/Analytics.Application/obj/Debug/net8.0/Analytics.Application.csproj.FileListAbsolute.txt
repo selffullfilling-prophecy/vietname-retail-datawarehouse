@@ -34,3 +34,6 @@ C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\An
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Application\obj\Debug\net8.0\refint\Analytics.Application.dll
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Application\obj\Debug\net8.0\Analytics.Application.pdb
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Application\obj\Debug\net8.0\ref\Analytics.Application.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Application.deps.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Application.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Application.pdb

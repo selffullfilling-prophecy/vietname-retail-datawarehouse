@@ -1,73 +1,68 @@
 import { useEffect, useMemo, useState } from "react";
-import { KpiCard } from "../components/KpiCard";
-import { SectionCard } from "../components/SectionCard";
+import { AdvancedAnalysisToggle } from "../components/AdvancedAnalysisToggle";
+import { BreadcrumbTrail } from "../components/BreadcrumbTrail";
+import { DashboardPanel } from "../components/DashboardPanel";
+import { ExecutiveKpiCard } from "../components/ExecutiveKpiCard";
+import { InteractiveBarChart, type InteractiveChartDatum } from "../components/InteractiveBarChart";
+import { InteractiveTrendChart } from "../components/InteractiveTrendChart";
 import {
+  getSalesCustomerBreakdown,
   getSalesPivot,
   getSalesStoreBreakdown,
   getSalesSummaryByYear,
   getSalesTimeBreakdown,
+  type SalesCustomerBreakdownResponse,
   type SalesPivotResponse,
   type SalesStoreBreakdownResponse,
   type SalesTimeBreakdownResponse,
   type YearSalesSummaryResponse,
 } from "../services/api";
 
-type PivotOrientation = "rows-time" | "rows-store";
-type SalesMetric = "revenue" | "salesVolume";
-type SalesTableView = "time" | "store" | "pivot";
+type SalesView = "time" | "store" | "customer" | "compare";
 
 export function SalesPage() {
   const [summary, setSummary] = useState<YearSalesSummaryResponse | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [breakdown, setBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
-  const [breakdownLoading, setBreakdownLoading] = useState(true);
-  const [breakdownError, setBreakdownError] = useState<string | null>(null);
+  const [timeBreakdown, setTimeBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
   const [storeBreakdown, setStoreBreakdown] = useState<SalesStoreBreakdownResponse | null>(null);
-  const [storeBreakdownLoading, setStoreBreakdownLoading] = useState(true);
-  const [storeBreakdownError, setStoreBreakdownError] = useState<string | null>(null);
-  const [pivot, setPivot] = useState<SalesPivotResponse | null>(null);
-  const [pivotLoading, setPivotLoading] = useState(true);
-  const [pivotError, setPivotError] = useState<string | null>(null);
-  const [tableView, setTableView] = useState<SalesTableView>("time");
-  const [pivotOrientation, setPivotOrientation] = useState<PivotOrientation>("rows-time");
-  const [pivotMetric, setPivotMetric] = useState<SalesMetric>("revenue");
-  const [selectedPivotTimeKeys, setSelectedPivotTimeKeys] = useState<string[]>([]);
-  const [selectedPivotStoreKeys, setSelectedPivotStoreKeys] = useState<string[]>([]);
-  const [drillState, setDrillState] = useState<{
-    level: "year" | "quarter" | "month";
-    year?: string;
-    quarter?: string;
-  }>({ level: "year" });
-  const [storeDrillState, setStoreDrillState] = useState<{
+  const [customerBreakdown, setCustomerBreakdown] = useState<SalesCustomerBreakdownResponse | null>(null);
+  const [comparison, setComparison] = useState<SalesPivotResponse | null>(null);
+  const [isCustomerUnavailable, setIsCustomerUnavailable] = useState(false);
+  const [activeView, setActiveView] = useState<SalesView>("time");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [timeState, setTimeState] = useState<{ level: "year" | "quarter" | "month"; year?: string; quarter?: string }>({
+    level: "year",
+  });
+  const [storeState, setStoreState] = useState<{
     level: "state" | "city" | "store";
     stateMemberUniqueName?: string;
     cityMemberUniqueName?: string;
-    storeMemberUniqueName?: string;
     stateLabel?: string;
     cityLabel?: string;
-    storeLabel?: string;
   }>({ level: "state" });
+  const [customerState, setCustomerState] = useState<{
+    level: "state" | "city" | "customer";
+    stateMemberUniqueName?: string;
+    cityMemberUniqueName?: string;
+    stateLabel?: string;
+    cityLabel?: string;
+  }>({ level: "state" });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeTimeYearFilter =
-    drillState.level === "quarter" || drillState.level === "month" ? drillState.year : undefined;
-  const activeTimeQuarterFilter = drillState.level === "month" ? drillState.quarter : undefined;
-  const activeStateFilter =
-    storeDrillState.level === "city" || storeDrillState.level === "store"
-      ? storeDrillState.stateMemberUniqueName
-      : undefined;
-  const activeCityFilter =
-    storeDrillState.level === "store" ? storeDrillState.cityMemberUniqueName : undefined;
-  const activeStoreFilter =
-    storeDrillState.level === "store" ? storeDrillState.storeMemberUniqueName : undefined;
+  const activeTimeYear = timeState.year ?? (selectedYear === "all" ? undefined : selectedYear);
+  const activeTimeQuarter = timeState.level === "month" ? timeState.quarter : undefined;
+  const storeFilter = {
+    stateMemberUniqueName: storeState.stateMemberUniqueName,
+    cityMemberUniqueName: storeState.cityMemberUniqueName,
+  };
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadSalesSummary() {
+    async function loadSummary() {
       try {
-        setSummaryLoading(true);
-        setSummaryError(null);
+        setIsLoading(true);
+        setError(null);
         const response = await getSalesSummaryByYear();
 
         if (!isMounted) {
@@ -76,20 +71,17 @@ export function SalesPage() {
 
         setSummary(response);
       } catch (loadError) {
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          setError("Không thể tải dữ liệu. Vui lòng kiểm tra API.");
         }
-
-        const message = loadError instanceof Error ? loadError.message : "Không thể tải tổng hợp bán hàng.";
-        setSummaryError(message);
       } finally {
         if (isMounted) {
-          setSummaryLoading(false);
+          setIsLoading(false);
         }
       }
     }
 
-    void loadSalesSummary();
+    void loadSummary();
 
     return () => {
       isMounted = false;
@@ -99,271 +91,145 @@ export function SalesPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadTimeBreakdown() {
+    async function loadSalesViews() {
       try {
-        setBreakdownLoading(true);
-        setBreakdownError(null);
+        setError(null);
+        const customerRequest = getSalesCustomerBreakdown(
+          customerState.level,
+          customerState.stateMemberUniqueName,
+          customerState.cityMemberUniqueName,
+          activeTimeYear,
+          activeTimeQuarter,
+        )
+          .then((response) => ({ response, unavailable: false }))
+          .catch(() => ({ response: null, unavailable: true }));
 
-        const response = await getSalesTimeBreakdown(
-          drillState.level,
-          drillState.year,
-          drillState.quarter,
-          activeStateFilter,
-          activeCityFilter,
-          activeStoreFilter,
-        );
+        const [timeResponse, storeResponse, customerResult, comparisonResponse] = await Promise.all([
+          getSalesTimeBreakdown(
+            timeState.level,
+            timeState.year,
+            timeState.quarter,
+            storeFilter.stateMemberUniqueName,
+            storeFilter.cityMemberUniqueName,
+          ),
+          getSalesStoreBreakdown(
+            storeState.level,
+            storeState.stateMemberUniqueName,
+            storeState.cityMemberUniqueName,
+            activeTimeYear,
+            activeTimeQuarter,
+          ),
+          customerRequest,
+          getSalesPivot(
+            timeState.level,
+            storeState.level,
+            timeState.year,
+            activeTimeQuarter,
+            storeState.stateMemberUniqueName,
+            storeState.cityMemberUniqueName,
+          ),
+        ]);
 
         if (!isMounted) {
           return;
         }
 
-        setBreakdown(response);
+        setTimeBreakdown(timeResponse);
+        setStoreBreakdown(storeResponse);
+        setCustomerBreakdown(customerResult.response);
+        setIsCustomerUnavailable(customerResult.unavailable);
+        setComparison(comparisonResponse);
       } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const message = loadError instanceof Error ? loadError.message : "Không thể tải drill-down thời gian.";
-        setBreakdownError(message);
-      } finally {
         if (isMounted) {
-          setBreakdownLoading(false);
+          setError("Không thể tải dữ liệu. Vui lòng kiểm tra API.");
         }
       }
     }
 
-    void loadTimeBreakdown();
+    void loadSalesViews();
 
     return () => {
       isMounted = false;
     };
-  }, [drillState, activeStateFilter, activeCityFilter, activeStoreFilter]);
+  }, [activeTimeQuarter, activeTimeYear, customerState, storeFilter.cityMemberUniqueName, storeFilter.stateMemberUniqueName, storeState, timeState]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadStoreBreakdown() {
-      try {
-        setStoreBreakdownLoading(true);
-        setStoreBreakdownError(null);
-
-        const response = await getSalesStoreBreakdown(
-          storeDrillState.level,
-          storeDrillState.stateMemberUniqueName,
-          storeDrillState.cityMemberUniqueName,
-          activeTimeYearFilter,
-          activeTimeQuarterFilter,
-        );
-
-        if (!isMounted) {
-          return;
-        }
-
-        setStoreBreakdown(response);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const message = loadError instanceof Error ? loadError.message : "Không thể tải drill-down khu vực.";
-        setStoreBreakdownError(message);
-      } finally {
-        if (isMounted) {
-          setStoreBreakdownLoading(false);
-        }
-      }
+  const years = summary?.rows.map((row) => row.year) ?? [];
+  const selectedSummary = useMemo(() => {
+    if (!summary?.rows.length) {
+      return null;
     }
 
-    void loadStoreBreakdown();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [storeDrillState, activeTimeYearFilter, activeTimeQuarterFilter]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadPivot() {
-      try {
-        setPivotLoading(true);
-        setPivotError(null);
-
-        const response = await getSalesPivot(
-          drillState.level,
-          storeDrillState.level,
-          drillState.year,
-          drillState.quarter,
-          storeDrillState.stateMemberUniqueName,
-          storeDrillState.cityMemberUniqueName,
-          storeDrillState.storeMemberUniqueName,
-        );
-
-        if (!isMounted) {
-          return;
-        }
-
-        setPivot(response);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const message = loadError instanceof Error ? loadError.message : "Không thể tải pivot bán hàng.";
-        setPivotError(message);
-      } finally {
-        if (isMounted) {
-          setPivotLoading(false);
-        }
-      }
+    return selectedYear === "all"
+      ? summary.rows[summary.rows.length - 1] ?? null
+      : summary.rows.find((row) => row.year === selectedYear) ?? null;
+  }, [summary, selectedYear]);
+  const previousSummary = useMemo(() => {
+    if (!summary?.rows.length || !selectedSummary) {
+      return null;
     }
 
-    void loadPivot();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [drillState, storeDrillState]);
-
-  useEffect(() => {
-    const nextKeys = pivot?.timeAxis.map((item) => item.key) ?? [];
-    if (!nextKeys.length) {
-      setSelectedPivotTimeKeys([]);
-      return;
+    const index = summary.rows.findIndex((row) => row.year === selectedSummary.year);
+    return index > 0 ? summary.rows[index - 1] : null;
+  }, [summary, selectedSummary]);
+  const revenueGrowth = useMemo(() => {
+    if (!selectedSummary || !previousSummary || previousSummary.revenue === 0) {
+      return null;
     }
 
-    setSelectedPivotTimeKeys((previous) => {
-      if (!previous.length) {
-        return nextKeys;
-      }
-
-      const filtered = previous.filter((key) => nextKeys.includes(key));
-      return filtered.length ? filtered : nextKeys;
-    });
-  }, [pivot]);
-
-  useEffect(() => {
-    const nextKeys = pivot?.storeAxis.map((item) => item.key) ?? [];
-    if (!nextKeys.length) {
-      setSelectedPivotStoreKeys([]);
-      return;
-    }
-
-    setSelectedPivotStoreKeys((previous) => {
-      if (!previous.length) {
-        return nextKeys;
-      }
-
-      const filtered = previous.filter((key) => nextKeys.includes(key));
-      return filtered.length ? filtered : nextKeys;
-    });
-  }, [pivot]);
-
-  const totalRevenue = useMemo(
-    () => summary?.rows.reduce((sum, row) => sum + row.revenue, 0) ?? 0,
-    [summary],
-  );
-  const totalSalesVolume = useMemo(
-    () => summary?.rows.reduce((sum, row) => sum + row.salesVolume, 0) ?? 0,
-    [summary],
-  );
-  const latestYear = summary?.rows.length ? summary.rows[summary.rows.length - 1] : null;
-  const availableYears = summary?.rows.map((row) => row.year) ?? [];
-  const pivotCellMap = useMemo(() => {
-    const entries = pivot?.cells.map((cell) => [`${cell.timeKey}::${cell.storeKey}`, cell] as const) ?? [];
-    return new Map(entries);
-  }, [pivot]);
-
-  const filteredTimeAxis =
-    pivot?.timeAxis.filter((item) => selectedPivotTimeKeys.includes(item.key)) ?? [];
-  const filteredStoreAxis =
-    pivot?.storeAxis.filter((item) => selectedPivotStoreKeys.includes(item.key)) ?? [];
-  const pivotRows = pivotOrientation === "rows-time" ? filteredTimeAxis : filteredStoreAxis;
-  const pivotColumns = pivotOrientation === "rows-time" ? filteredStoreAxis : filteredTimeAxis;
-
-  const activeTableLoading =
-    tableView === "time" ? breakdownLoading : tableView === "store" ? storeBreakdownLoading : pivotLoading;
-  const activeTableError =
-    tableView === "time" ? breakdownError : tableView === "store" ? storeBreakdownError : pivotError;
-  const timeSliceOptions = useMemo(() => {
-    if (drillState.level === "year") {
-      return availableYears.map((year) => ({
-        key: year,
-        label: year,
-      }));
-    }
-
-    if (drillState.level === "quarter") {
-      return (
-        breakdown?.rows.map((row) => ({
-          key: row.key,
-          label: row.label,
-        })) ?? []
-      );
-    }
-
-    return [];
-  }, [availableYears, breakdown, drillState.level]);
-  const storeDiceOptions = useMemo(
-    () =>
-      storeBreakdown?.rows.map((row) => ({
-        key: row.memberUniqueName,
-        label: row.label,
-        memberUniqueName: row.memberUniqueName,
-      })) ?? [],
+    return ((selectedSummary.revenue - previousSummary.revenue) / previousSummary.revenue) * 100;
+  }, [previousSummary, selectedSummary]);
+  const topStores = useMemo(
+    () => [...(storeBreakdown?.rows ?? [])].sort((left, right) => right.revenue - left.revenue).slice(0, 5),
     [storeBreakdown],
   );
-  const currentTimeSliceLabel =
-    drillState.level === "year"
-      ? "Toàn bộ các năm"
-      : drillState.level === "quarter"
-        ? `Năm ${drillState.year}`
-        : `Năm ${drillState.year} / Q${drillState.quarter}`;
-  const currentStoreDiceLabel =
-    storeDrillState.level === "state"
-      ? "Toàn bộ khu vực"
-      : storeDrillState.level === "city"
-        ? (storeDrillState.stateLabel ?? "Toàn bộ khu vực")
-        : `${storeDrillState.stateLabel ?? ""}${storeDrillState.cityLabel ? ` / ${storeDrillState.cityLabel}` : ""}${storeDrillState.storeLabel ? ` / ${storeDrillState.storeLabel}` : ""}`;
-  const clearStoreDiceLabel =
-    storeDrillState.level === "store"
-      ? "Tất cả cửa hàng"
-      : storeDrillState.level === "city"
-        ? "Tất cả thành phố"
-        : "Tất cả vùng";
-  const showTimeSliceControls = tableView !== "time" && timeSliceOptions.length > 0;
-  const showStoreDiceControls = tableView !== "store" && storeDiceOptions.length > 0;
-  const timeContextLabel = useMemo(() => {
-    if (drillState.level === "month" && drillState.year && drillState.quarter) {
-      return `Năm ${drillState.year} / Q${drillState.quarter}, chi tiết theo tháng`;
-    }
-
-    if (drillState.level === "quarter" && drillState.year) {
-      return `Năm ${drillState.year}, chi tiết theo quý`;
-    }
-
-    return "Toàn bộ các năm";
-  }, [drillState]);
-  const storeContextLabel = useMemo(() => {
-    if (storeDrillState.level === "store" && storeDrillState.stateLabel && storeDrillState.cityLabel) {
-      return `${storeDrillState.stateLabel} / ${storeDrillState.cityLabel}${storeDrillState.storeLabel ? ` / ${storeDrillState.storeLabel}` : ""}`;
-    }
-
-    if (
-      (storeDrillState.level === "city" || storeDrillState.level === "store") &&
-      storeDrillState.stateLabel
-    ) {
-      return storeDrillState.stateLabel;
-    }
-
-    return "Toàn bộ khu vực";
-  }, [storeDrillState]);
-  const activeContextTitle =
-    tableView === "time"
-      ? "Bảng thời gian vẫn đang giữ nguyên bộ lọc khu vực hiện tại."
-      : tableView === "store"
-        ? "Bảng khu vực vẫn đang giữ nguyên ngữ cảnh thời gian hiện tại."
-        : "Pivot đang kết hợp đồng thời cả thời gian lẫn khu vực.";
+  const topCustomers = useMemo(
+    () => [...(customerBreakdown?.rows ?? [])].sort((left, right) => right.revenue - left.revenue).slice(0, 5),
+    [customerBreakdown],
+  );
+  const comparisonRows =
+    comparison?.timeAxis.slice(0, 6).map((row, index) => ({
+      ...row,
+      label: getComparisonTimeLabel(row.label, index),
+    })) ?? [];
+  const comparisonColumns = comparison?.storeAxis.slice(0, 5) ?? [];
+  const comparisonCellMap = useMemo(() => {
+    const entries = comparison?.cells.map((cell) => [`${cell.timeKey}::${cell.storeKey}`, cell] as const) ?? [];
+    return new Map(entries);
+  }, [comparison]);
+  const timeBreakdownTotal = useMemo(
+    () => (timeBreakdown?.rows ?? []).reduce((sum, row) => sum + row.revenue, 0),
+    [timeBreakdown],
+  );
+  const timeBreakdownChartData = (timeBreakdown?.rows ?? []).map((row, index) => ({
+    key: getTimeChartKey(row, index),
+    label: getTimeDisplayLabel(row, index),
+    value: row.revenue,
+    formattedValue: formatCurrencyCompact(row.revenue),
+    secondaryValue: row.salesVolume,
+    formattedSecondaryValue: `${formatNumber(row.salesVolume)} đơn vị`,
+    sharePercent: timeBreakdownTotal > 0 ? (row.revenue / timeBreakdownTotal) * 100 : undefined,
+    sourceIndex: index,
+    canDrillDown: row.canDrillDown,
+  }));
+  const storeChartData = topStores.map((row) => ({
+    key: row.memberUniqueName,
+    label: row.label,
+    value: row.revenue,
+    formattedValue: formatCurrencyCompact(row.revenue),
+    secondaryValue: row.salesVolume,
+    formattedSecondaryValue: `${formatNumber(row.salesVolume)} đơn vị`,
+    canDrillDown: row.canDrillDown,
+  }));
+  const customerChartData = topCustomers.map((row) => ({
+    key: row.memberUniqueName,
+    label: row.label,
+    value: row.revenue,
+    formattedValue: formatCurrencyCompact(row.revenue),
+    secondaryValue: row.salesVolume,
+    formattedSecondaryValue: `${formatNumber(row.salesVolume)} đơn vị`,
+    canDrillDown: row.canDrillDown,
+  }));
+  const customerUnavailableMessage = "Tính năng phân tích khách hàng đang chờ API customer-breakdown.";
 
   function formatNumber(value: number): string {
     return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
@@ -381,670 +247,576 @@ export function SalesPage() {
     return `${formatNumber(value)} VNĐ`;
   }
 
-  function toggleItem(currentItems: string[], nextItem: string, setter: (items: string[]) => void) {
-    if (currentItems.length === 1 && currentItems[0] === nextItem) {
-      return;
+  function getComparisonTimeLabel(label: string, index: number) {
+    if (comparison?.timeLevel === "quarter") {
+      const quarterNumber = Number(label) >= 1 && Number(label) <= 4 ? label : String(index + 1);
+      return comparison.selectedYear ? `Quý ${quarterNumber}/${comparison.selectedYear}` : `Quý ${quarterNumber}`;
     }
 
-    if (currentItems.includes(nextItem)) {
-      const nextItems = currentItems.filter((item) => item !== nextItem);
-      setter(nextItems.length ? nextItems : [nextItem]);
-      return;
+    if (comparison?.timeLevel === "month") {
+      const monthNumber = Number(label) >= 1 && Number(label) <= 12 ? label : String(index + 1);
+      return comparison.selectedYear ? `Tháng ${monthNumber}/${comparison.selectedYear}` : `Tháng ${monthNumber}`;
     }
 
-    setter([...currentItems, nextItem]);
+    return label;
   }
 
-  function normalizeQuarterKey(key: string) {
-    const quarterMatches = key.match(/\d+/g);
-    return quarterMatches?.length ? quarterMatches[quarterMatches.length - 1] : key;
+  function selectYear(year: string) {
+    setSelectedYear(year);
+    setTimeState(year === "all" ? { level: "year" } : { level: "quarter", year });
+    setStoreState({ level: "state" });
+    setCustomerState({ level: "state" });
   }
 
-  function handleDrillDown(key: string) {
-    if (!breakdown?.drillTargetLevel) {
+  function getQuarterNumber(row: SalesTimeBreakdownResponse["rows"][number], index: number) {
+    const candidates = [row.label, row.key];
+    for (const candidate of candidates) {
+      const quarterMatch = candidate.match(/qu[ýy]\s*(\d)/i);
+      if (quarterMatch?.[1]) {
+        return quarterMatch[1];
+      }
+
+      const numbers = candidate.match(/\d+/g);
+      const lastNumber = numbers?.[numbers.length - 1];
+      if (lastNumber && Number(lastNumber) >= 1 && Number(lastNumber) <= 4) {
+        return lastNumber;
+      }
+    }
+
+    return String(index + 1);
+  }
+
+  function getMonthNumber(row: SalesTimeBreakdownResponse["rows"][number], index: number) {
+    const numbers = row.label.match(/\d+/g) ?? row.key.match(/\d+/g);
+    const lastNumber = numbers?.[numbers.length - 1];
+    return lastNumber && Number(lastNumber) >= 1 && Number(lastNumber) <= 12 ? lastNumber : String(index + 1);
+  }
+
+  function getTimeDisplayLabel(row: SalesTimeBreakdownResponse["rows"][number], index: number) {
+    if (timeBreakdown?.level === "quarter") {
+      const year = timeBreakdown.selectedYear ?? timeState.year ?? selectedYear;
+      return year && year !== "all" ? `Quý ${getQuarterNumber(row, index)}/${year}` : `Quý ${getQuarterNumber(row, index)}`;
+    }
+
+    if (timeBreakdown?.level === "month") {
+      const year = timeBreakdown.selectedYear ?? timeState.year;
+      return year ? `Tháng ${getMonthNumber(row, index)}/${year}` : row.label;
+    }
+
+    return row.label;
+  }
+
+  function getTimeChartKey(row: SalesTimeBreakdownResponse["rows"][number], index: number) {
+    if (timeBreakdown?.level === "quarter") {
+      return `quarter-${timeBreakdown.selectedYear ?? timeState.year ?? "all"}-${getQuarterNumber(row, index)}`;
+    }
+
+    return `${timeBreakdown?.level ?? "time"}-${row.key}-${index}`;
+  }
+
+  function drillTime(row: SalesTimeBreakdownResponse["rows"][number], index: number) {
+    if (!timeBreakdown?.drillTargetLevel) {
       return;
     }
 
-    const normalizedQuarterKey = breakdown.level === "quarter" ? normalizeQuarterKey(key) : key;
-
-    if (breakdown.level === "year") {
-      setDrillState({
-        level: "quarter",
-        year: key,
-      });
+    if (timeBreakdown.level === "year") {
+      setTimeState({ level: "quarter", year: row.key });
+      setSelectedYear(row.key);
       return;
     }
 
-    if (breakdown.level === "quarter" && breakdown.selectedYear) {
-      setDrillState({
+    if (timeBreakdown.level === "quarter" && timeBreakdown.selectedYear) {
+      setTimeState({
         level: "month",
-        year: breakdown.selectedYear,
-        quarter: normalizedQuarterKey,
+        year: timeBreakdown.selectedYear,
+        quarter: getQuarterNumber(row, index),
       });
     }
   }
 
-  function handleTimeSliceSelect(key: string) {
-    if (drillState.level === "year") {
-      setDrillState({
-        level: "quarter",
-        year: key,
-      });
+  function drillTimeChart(item: InteractiveChartDatum) {
+    const row = typeof item.sourceIndex === "number" ? timeBreakdown?.rows[item.sourceIndex] : undefined;
+    if (row && typeof item.sourceIndex === "number") {
+      drillTime(row, item.sourceIndex);
       return;
     }
 
-    if (drillState.level === "quarter" && breakdown?.selectedYear) {
-      setDrillState({
-        level: "month",
-        year: breakdown.selectedYear,
-        quarter: normalizeQuarterKey(key),
-      });
+    if (timeState.level === "year") {
+      setTimeState({ level: "quarter", year: item.key });
+      setSelectedYear(item.key);
     }
   }
 
-  function handleClearTimeSlice() {
-    setDrillState({ level: "year" });
-  }
-
-  function handleRollUpTime() {
-    if (drillState.level === "month" && drillState.year) {
-      setDrillState({
-        level: "quarter",
-        year: drillState.year,
-      });
+  function rollTimeUp() {
+    if (timeState.level === "month" && timeState.year) {
+      setTimeState({ level: "quarter", year: timeState.year });
+      setSelectedYear(timeState.year);
       return;
     }
 
-    if (drillState.level === "quarter") {
-      setDrillState({ level: "year" });
-    }
+    setSelectedYear("all");
+    setTimeState({ level: "year" });
   }
 
-  function handleStoreDrillDown(row: SalesStoreBreakdownResponse["rows"][number]) {
+  function resetTimeContext() {
+    setSelectedYear("all");
+    setTimeState({ level: "year" });
+  }
+
+  function drillStore(row: SalesStoreBreakdownResponse["rows"][number]) {
     if (!storeBreakdown?.drillTargetLevel) {
       return;
     }
 
     if (storeBreakdown.level === "state") {
-      setStoreDrillState({
-        level: "city",
-        stateMemberUniqueName: row.memberUniqueName,
-        stateLabel: row.label,
-      });
+      setStoreState({ level: "city", stateMemberUniqueName: row.memberUniqueName, stateLabel: row.label });
       return;
     }
 
-    if (storeBreakdown.level === "city" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
-      setStoreDrillState({
+    if (storeBreakdown.level === "city") {
+      setStoreState({
         level: "store",
-        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-        stateLabel: storeDrillState.stateLabel,
+        stateMemberUniqueName: storeState.stateMemberUniqueName,
+        stateLabel: storeState.stateLabel,
         cityMemberUniqueName: row.memberUniqueName,
         cityLabel: row.label,
       });
     }
   }
 
-  function handleStoreDiceSelect(memberUniqueName: string, label: string) {
-    if (storeDrillState.level === "state") {
-      setStoreDrillState({
-        level: "city",
-        stateMemberUniqueName: memberUniqueName,
-        stateLabel: label,
-      });
+  function drillStoreChart(item: InteractiveChartDatum) {
+    const row = storeBreakdown?.rows.find((candidate) => candidate.memberUniqueName === item.key);
+    if (row) {
+      drillStore(row);
+    }
+  }
+
+  function rollStoreUp() {
+    if (storeState.level === "store") {
+      setStoreState({ level: "city", stateMemberUniqueName: storeState.stateMemberUniqueName, stateLabel: storeState.stateLabel });
       return;
     }
 
-    if (storeDrillState.level === "city" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
-      setStoreDrillState({
-        level: "store",
-        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-        stateLabel: storeDrillState.stateLabel,
-        cityMemberUniqueName: memberUniqueName,
-        cityLabel: label,
-      });
+    setStoreState({ level: "state" });
+  }
+
+  function resetStoreContext() {
+    setStoreState({ level: "state" });
+  }
+
+  function drillCustomer(row: SalesCustomerBreakdownResponse["rows"][number]) {
+    if (!customerBreakdown?.drillTargetLevel) {
       return;
     }
 
-    if (
-      storeDrillState.level === "store" &&
-      storeDrillState.stateMemberUniqueName &&
-      storeDrillState.stateLabel &&
-      storeDrillState.cityMemberUniqueName &&
-      storeDrillState.cityLabel
-    ) {
-      setStoreDrillState({
-        level: "store",
-        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-        stateLabel: storeDrillState.stateLabel,
-        cityMemberUniqueName: storeDrillState.cityMemberUniqueName,
-        cityLabel: storeDrillState.cityLabel,
-        storeMemberUniqueName: memberUniqueName,
-        storeLabel: label,
+    if (customerBreakdown.level === "state") {
+      setCustomerState({ level: "city", stateMemberUniqueName: row.memberUniqueName, stateLabel: row.label });
+      return;
+    }
+
+    if (customerBreakdown.level === "city") {
+      setCustomerState({
+        level: "customer",
+        stateMemberUniqueName: customerState.stateMemberUniqueName,
+        stateLabel: customerState.stateLabel,
+        cityMemberUniqueName: row.memberUniqueName,
+        cityLabel: row.label,
       });
     }
   }
 
-  function handleClearStoreDice() {
-    if (
-      storeDrillState.level === "store" &&
-      storeDrillState.stateMemberUniqueName &&
-      storeDrillState.stateLabel &&
-      storeDrillState.cityMemberUniqueName &&
-      storeDrillState.cityLabel
-    ) {
-      setStoreDrillState({
-        level: "store",
-        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-        stateLabel: storeDrillState.stateLabel,
-        cityMemberUniqueName: storeDrillState.cityMemberUniqueName,
-        cityLabel: storeDrillState.cityLabel,
-      });
-      return;
-    }
-
-    if (storeDrillState.level === "city" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
-      setStoreDrillState({
-        level: "city",
-        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-        stateLabel: storeDrillState.stateLabel,
-      });
-      return;
-    }
-
-    setStoreDrillState({ level: "state" });
-  }
-
-  function handleRollUpStore() {
-    if (storeDrillState.level === "store" && storeDrillState.stateMemberUniqueName && storeDrillState.stateLabel) {
-      setStoreDrillState({
-        level: "city",
-        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-        stateLabel: storeDrillState.stateLabel,
-      });
-      return;
-    }
-
-    if (storeDrillState.level === "city") {
-      setStoreDrillState({ level: "state" });
+  function drillCustomerChart(item: InteractiveChartDatum) {
+    const row = customerBreakdown?.rows.find((candidate) => candidate.memberUniqueName === item.key);
+    if (row) {
+      drillCustomer(row);
     }
   }
 
-  function getTimeLevelLabel(level: "year" | "quarter" | "month"): string {
-    if (level === "year") {
-      return "Năm";
+  function rollCustomerUp() {
+    if (customerState.level === "customer") {
+      setCustomerState({
+        level: "city",
+        stateMemberUniqueName: customerState.stateMemberUniqueName,
+        stateLabel: customerState.stateLabel,
+      });
+      return;
     }
 
+    setCustomerState({ level: "state" });
+  }
+
+  function resetCustomerContext() {
+    setCustomerState({ level: "state" });
+  }
+
+  function resetAllContexts() {
+    resetTimeContext();
+    resetStoreContext();
+    resetCustomerContext();
+  }
+
+  function getActiveTimeLabel() {
+    if (timeState.level === "month" && timeState.year && timeState.quarter) {
+      return `${timeState.year} > Quý ${timeState.quarter}`;
+    }
+
+    if (timeState.year) {
+      return timeState.year;
+    }
+
+    return null;
+  }
+
+  function getActiveStoreLabel() {
+    if (storeState.cityLabel) {
+      return `${storeState.stateLabel ?? "Khu vực"} > ${storeState.cityLabel}`;
+    }
+
+    return storeState.stateLabel ?? null;
+  }
+
+  function getTimeLabel(level: SalesTimeBreakdownResponse["level"] | undefined) {
     if (level === "quarter") {
       return "Quý";
     }
 
-    return "Tháng";
-  }
-
-  function getStoreLevelLabel(level: "state" | "city" | "store"): string {
-    if (level === "state") {
-      return "Khu vực";
+    if (level === "month") {
+      return "Tháng";
     }
 
+    return "Năm";
+  }
+
+  function getStoreLabel(level: SalesStoreBreakdownResponse["level"] | undefined) {
     if (level === "city") {
       return "Thành phố";
     }
 
-    return "Cửa hàng";
-  }
-
-  function getDrillTargetLabel(level: "quarter" | "month" | "city" | "store" | null): string {
-    if (level === "quarter") {
-      return "Xem quý";
-    }
-
-    if (level === "month") {
-      return "Xem tháng";
-    }
-
-    if (level === "city") {
-      return "Xem thành phố";
-    }
-
     if (level === "store") {
-      return "Xem cửa hàng";
+      return "Cửa hàng";
     }
 
-    return "";
+    return "Khu vực";
   }
 
-  function getPivotMetricValue(timeKey: string, storeKey: string): string {
-    const cell = pivotCellMap.get(`${timeKey}::${storeKey}`);
-    if (!cell) {
-      return "--";
+  function getCustomerLabel(level: SalesCustomerBreakdownResponse["level"] | undefined) {
+    if (level === "city") {
+      return "Thành phố";
     }
 
-    return pivotMetric === "revenue"
-      ? formatCurrencyCompact(cell.revenue)
-      : `${formatNumber(cell.salesVolume)} đơn vị`;
+    if (level === "customer") {
+      return "Khách hàng";
+    }
+
+    return "Khu vực";
   }
+
+  const activeTimeLabel = getActiveTimeLabel();
+  const activeStoreLabel = getActiveStoreLabel();
+  const hasActiveContext = Boolean(activeTimeLabel || activeStoreLabel);
 
   return (
-    <div className="page-stack analytics-page compact-screen-page">
-      <header className="page-header compact-page-header">
+    <div className="page-stack executive-page">
+      <header className="page-header executive-header">
         <div>
-          <p className="eyebrow">Phân tích bán hàng</p>
-          <h2>Drill down và pivot trong một bảng OLAP</h2>
-          <p className="muted">
-            Drill thời gian và khu vực vẫn dùng chung một ngữ cảnh phân tích, còn pivot chỉ đảm nhiệm việc xoay ma trận để đổi góc nhìn.
-          </p>
+          <p className="eyebrow">DOANH THU</p>
+          <h2>Theo dõi doanh thu theo thời gian, khu vực và khách hàng</h2>
+          <p className="muted">Màn hình mặc định dùng ngôn ngữ kinh doanh; bảng phân tích nâng cao được ẩn riêng.</p>
+        </div>
+        <div className="year-filter-group">
+          <span className="filter-group-label">Lọc nhanh</span>
+          <div className="year-filter-bar">
+            <button type="button" className={`filter-pill ${selectedYear === "all" ? "filter-pill-active" : ""}`} onClick={() => selectYear("all")}>
+              Toàn kỳ
+            </button>
+            {years.map((year) => (
+              <button type="button" className={`filter-pill ${selectedYear === year ? "filter-pill-active" : ""}`} onClick={() => selectYear(year)} key={year}>
+                {year}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <div className="kpi-grid analytics-kpi-grid compact-kpi-grid">
-        <KpiCard
-          label="Tổng doanh thu"
-          value={summaryLoading ? "Đang tải..." : formatCurrencyCompact(totalRevenue)}
-          hint="Lũy kế toàn bộ năm."
+      {error ? <p className="compact-error-text">{error}</p> : null}
+
+      <div className="executive-kpi-grid four-up">
+        <ExecutiveKpiCard
+          label="Doanh thu"
+          value={isLoading ? "Đang tải..." : selectedSummary ? formatCurrencyCompact(selectedSummary.revenue) : "--"}
+          hint={selectedSummary ? `Năm ${selectedSummary.year}` : "Chưa có dữ liệu."}
         />
-        <KpiCard
+        <ExecutiveKpiCard
+          label="Tăng/giảm"
+          value={revenueGrowth === null ? "--" : `${revenueGrowth >= 0 ? "+" : "-"}${Math.abs(revenueGrowth).toFixed(1)}%`}
+          trendLabel={revenueGrowth === null ? "Cần thêm dữ liệu" : "So với năm trước"}
+          trendDirection={revenueGrowth === null ? "flat" : revenueGrowth >= 0 ? "up" : "down"}
+        />
+        <ExecutiveKpiCard
           label="Sản lượng bán"
-          value={summaryLoading ? "Đang tải..." : `${formatNumber(totalSalesVolume)} đơn vị`}
-          hint="Tổng sản lượng hiện có."
+          value={selectedSummary ? `${formatNumber(selectedSummary.salesVolume)} đơn vị` : "--"}
+          hint="Theo năm đang xem."
         />
-        <KpiCard
-          label="Năm mới nhất"
-          value={latestYear?.year ?? "--"}
-          hint={
-            latestYear
-              ? `${formatCurrencyCompact(latestYear.revenue)} | ${formatNumber(latestYear.salesVolume)} đơn vị`
-              : "Đang chờ dữ liệu."
-          }
+        <ExecutiveKpiCard
+          label="Khách hàng đóng góp lớn"
+          value={topCustomers[0]?.label ?? "--"}
+          hint={topCustomers[0] ? formatCurrencyCompact(topCustomers[0].revenue) : isCustomerUnavailable ? customerUnavailableMessage : "Đang chờ dữ liệu."}
         />
       </div>
 
-      <SectionCard
-        title="Bảng OLAP bán hàng"
-        description="Drill thời gian và khu vực dùng chung ngữ cảnh; pivot chỉ đổi cách trình bày ma trận."
-      >
-        <div className="olap-card">
-          <aside className="olap-toolbar-panel">
-            <div className="olap-toolbar">
-            <div className="olap-toolbar-row">
-              <div className="olap-group">
-                <span className="olap-group-label">Góc nhìn</span>
-                <button
-                  type="button"
-                  className={`filter-pill ${tableView === "time" ? "filter-pill-active" : ""}`}
-                  onClick={() => setTableView("time")}
-                >
-                  Thời gian
-                </button>
-                <button
-                  type="button"
-                  className={`filter-pill ${tableView === "store" ? "filter-pill-active" : ""}`}
-                  onClick={() => setTableView("store")}
-                >
-                  Khu vực
-                </button>
-                <button
-                  type="button"
-                  className={`filter-pill ${tableView === "pivot" ? "filter-pill-active" : ""}`}
-                  onClick={() => setTableView("pivot")}
-                >
-                  Pivot
-                </button>
-              </div>
+      <div className="segmented-control" aria-label="Xem theo">
+        <button type="button" className={activeView === "time" ? "active" : ""} onClick={() => setActiveView("time")}>
+          Theo thời gian
+        </button>
+        <button type="button" className={activeView === "store" ? "active" : ""} onClick={() => setActiveView("store")}>
+          Theo khu vực cửa hàng
+        </button>
+        <button type="button" className={activeView === "customer" ? "active" : ""} onClick={() => setActiveView("customer")}>
+          Theo khách hàng
+        </button>
+        <button type="button" className={activeView === "compare" ? "active" : ""} onClick={() => setActiveView("compare")}>
+          So sánh 2 chiều
+        </button>
+      </div>
 
-              {tableView === "pivot" ? (
-                <div className="olap-group">
-                  <span className="olap-group-label">Chỉ số</span>
-                  <button
-                    type="button"
-                    className={`filter-pill ${pivotMetric === "revenue" ? "filter-pill-active" : ""}`}
-                    onClick={() => setPivotMetric("revenue")}
-                  >
-                    Doanh thu
-                  </button>
-                  <button
-                    type="button"
-                    className={`filter-pill ${pivotMetric === "salesVolume" ? "filter-pill-active" : ""}`}
-                    onClick={() => setPivotMetric("salesVolume")}
-                  >
-                    Sản lượng
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                      setPivotOrientation((current) =>
-                        current === "rows-time" ? "rows-store" : "rows-time",
-                      )}
-                  >
-                    Đảo hàng / cột
-                  </button>
-                </div>
-              ) : null}
+      {hasActiveContext ? (
+        <div className="context-chip-row" aria-label="Bộ lọc đang áp dụng">
+          {activeTimeLabel ? (
+            <span className="context-chip">
+              <strong>Thời gian:</strong> {activeTimeLabel}
+              <button type="button" onClick={resetTimeContext}>
+                Bỏ lọc thời gian
+              </button>
+            </span>
+          ) : null}
+          {activeStoreLabel ? (
+            <span className="context-chip">
+              <strong>Khu vực:</strong> {activeStoreLabel}
+              <button type="button" onClick={resetStoreContext}>
+                Bỏ lọc khu vực
+              </button>
+            </span>
+          ) : null}
+          <button type="button" className="secondary-button" onClick={resetAllContexts}>
+            Quay lại tổng quan
+          </button>
+        </div>
+      ) : null}
+
+      {activeView === "time" ? (
+        <div className="executive-main-grid">
+          <DashboardPanel title="Xu hướng doanh thu" size="large">
+            <InteractiveTrendChart
+              ariaLabel="Xu hướng doanh thu"
+              data={timeBreakdownChartData}
+              valueLabel="Doanh thu"
+              secondaryLabel="Sản lượng bán"
+              onPointClick={drillTimeChart}
+            />
+          </DashboardPanel>
+          <DashboardPanel title={`Chi tiết theo ${getTimeLabel(timeBreakdown?.level).toLowerCase()}`}>
+            <div className="chart-panel-stack">
+              <BreadcrumbTrail
+                backLabel="Quay lại cấp trước"
+                onBack={timeState.level !== "year" ? rollTimeUp : undefined}
+                items={[
+                  { label: "Tổng quan", onClick: timeState.level !== "year" ? resetTimeContext : undefined },
+                  ...(timeState.year ? [{ label: timeState.year }] : []),
+                  ...(timeState.quarter && timeState.year ? [{ label: `Quý ${timeState.quarter}/${timeState.year}` }] : []),
+                ]}
+              />
+              <InteractiveBarChart
+                data={timeBreakdownChartData}
+                valueLabel="Doanh thu"
+                secondaryLabel="Sản lượng bán"
+                onDrillDown={drillTimeChart}
+              />
             </div>
-
-            <div className="olap-toolbar-row">
-              <div className="olap-group">
-                <span className="olap-group-label">Drill thời gian</span>
-                <button
-                  type="button"
-                  className={`breadcrumb-button ${drillState.level === "year" ? "breadcrumb-button-active" : ""}`}
-                  onClick={() => setDrillState({ level: "year" })}
-                >
-                  Năm
-                </button>
-                {drillState.year ? (
-                  <button
-                    type="button"
-                    className={`breadcrumb-button ${drillState.level === "quarter" ? "breadcrumb-button-active" : ""}`}
-                    onClick={() => setDrillState({ level: "quarter", year: drillState.year })}
-                  >
-                    {drillState.year}
-                  </button>
-                ) : null}
-                {drillState.quarter ? <span className="breadcrumb-chip">Q{drillState.quarter}</span> : null}
-              </div>
-
-              {drillState.level !== "year" ? (
-                <button type="button" className="secondary-button" onClick={handleRollUpTime}>
-                  Roll up thời gian
-                </button>
-              ) : null}
-            </div>
-
-            <div className="olap-toolbar-row">
-              <div className="olap-group">
-                <span className="olap-group-label">Drill khu vực</span>
-                <button
-                  type="button"
-                  className={`breadcrumb-button ${storeDrillState.level === "state" ? "breadcrumb-button-active" : ""}`}
-                  onClick={() => setStoreDrillState({ level: "state" })}
-                >
-                  Khu vực
-                </button>
-                {storeDrillState.stateLabel ? (
-                  <button
-                    type="button"
-                    className={`breadcrumb-button ${storeDrillState.level === "city" ? "breadcrumb-button-active" : ""}`}
-                    onClick={() =>
-                      setStoreDrillState({
-                        level: "city",
-                        stateMemberUniqueName: storeDrillState.stateMemberUniqueName,
-                        stateLabel: storeDrillState.stateLabel,
-                      })}
-                  >
-                    {storeDrillState.stateLabel}
-                  </button>
-                ) : null}
-                {storeDrillState.cityLabel ? <span className="breadcrumb-chip">{storeDrillState.cityLabel}</span> : null}
-              </div>
-
-              {storeDrillState.level !== "state" ? (
-                <button type="button" className="secondary-button" onClick={handleRollUpStore}>
-                  Roll up khu vực
-                </button>
-              ) : null}
-            </div>
-
-            {showTimeSliceControls || showStoreDiceControls ? (
-              <div className="olap-toolbar-row">
-                <p className="muted">
-                  Slice / dice là bộ lọc nhanh dùng chung ngữ cảnh drill hiện tại, giúp thu hẹp dữ liệu mà không phải dò lại toàn bộ bảng.
-                </p>
-              </div>
-            ) : null}
-
-            {showTimeSliceControls ? (
-              <div className="olap-toolbar-row">
-                <div className="olap-group">
-                  <span className="olap-group-label">Slice thời gian</span>
-                  <button
-                    type="button"
-                    className={`filter-pill ${drillState.level === "year" ? "filter-pill-active" : ""}`}
-                    onClick={handleClearTimeSlice}
-                  >
-                    Tất cả năm
-                  </button>
-                  {timeSliceOptions.map((option) => {
-                    const isActive =
-                      drillState.level === "quarter"
-                        ? drillState.year === option.key
-                        : drillState.level === "month"
-                          ? drillState.quarter === normalizeQuarterKey(option.key)
-                          : false;
-
-                    return (
-                      <button
-                        key={option.key}
-                        type="button"
-                        className={`filter-pill ${isActive ? "filter-pill-active" : ""}`}
-                        onClick={() => handleTimeSliceSelect(option.key)}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-
-            {showStoreDiceControls ? (
-              <div className="olap-toolbar-row">
-                <div className="olap-group">
-                  <span className="olap-group-label">Dice khu vực</span>
-                  <button
-                    type="button"
-                    className={`filter-pill ${
-                      storeDrillState.level === "state" ||
-                      (storeDrillState.level === "city" && !storeDrillState.cityMemberUniqueName) ||
-                      (storeDrillState.level === "store" && !storeDrillState.storeMemberUniqueName)
-                        ? "filter-pill-active"
-                        : ""
-                    }`}
-                    onClick={handleClearStoreDice}
-                  >
-                    {clearStoreDiceLabel}
-                  </button>
-                  {storeDiceOptions.map((option) => {
-                    const isActive =
-                      storeDrillState.level === "city"
-                        ? storeDrillState.stateMemberUniqueName === option.memberUniqueName
-                        : storeDrillState.level === "store"
-                          ? storeDrillState.storeMemberUniqueName === option.memberUniqueName
-                          : false;
-
-                    return (
-                      <button
-                        key={option.key}
-                        type="button"
-                        className={`filter-pill ${isActive ? "filter-pill-active" : ""}`}
-                        onClick={() => handleStoreDiceSelect(option.memberUniqueName, option.label)}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-
-            {tableView === "pivot" ? (
-              <>
-                <div className="olap-toolbar-row">
-                  <p className="muted">Bộ lọc dưới đây chỉ thu gọn phạm vi hiển thị của ma trận pivot, không thay đổi thao tác pivot.</p>
-                </div>
-
-                <div className="olap-toolbar-row">
-                  <div className="olap-group">
-                    <span className="olap-group-label">Hiển thị trục thời gian</span>
-                    <button
-                      type="button"
-                      className={`filter-pill ${selectedPivotTimeKeys.length === (pivot?.timeAxis.length ?? 0) ? "filter-pill-active" : ""}`}
-                      onClick={() => setSelectedPivotTimeKeys(pivot?.timeAxis.map((item) => item.key) ?? [])}
-                    >
-                      Tất cả mốc
-                    </button>
-                    {pivot?.timeAxis.map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        className={`filter-pill ${selectedPivotTimeKeys.includes(item.key) ? "filter-pill-active" : ""}`}
-                        onClick={() => toggleItem(selectedPivotTimeKeys, item.key, setSelectedPivotTimeKeys)}
-                      >
-                        {item.label}
-                      </button>
-                    )) ?? null}
-                  </div>
-                </div>
-
-                <div className="olap-toolbar-row">
-                  <div className="olap-group">
-                    <span className="olap-group-label">Hiển thị trục khu vực</span>
-                    <button
-                      type="button"
-                      className={`filter-pill ${selectedPivotStoreKeys.length === (pivot?.storeAxis.length ?? 0) ? "filter-pill-active" : ""}`}
-                      onClick={() => setSelectedPivotStoreKeys(pivot?.storeAxis.map((item) => item.key) ?? [])}
-                    >
-                      Tất cả vùng
-                    </button>
-                    {pivot?.storeAxis.map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        className={`filter-pill ${selectedPivotStoreKeys.includes(item.key) ? "filter-pill-active" : ""}`}
-                        onClick={() => toggleItem(selectedPivotStoreKeys, item.key, setSelectedPivotStoreKeys)}
-                      >
-                        {item.label}
-                      </button>
-                    )) ?? null}
-                  </div>
-                </div>
-              </>
-            ) : null}
-            </div>
-          </aside>
-
-          <div className="olap-data-panel">
-            <div className="info-strip olap-info-strip">
-            <span className="info-pill">Số năm: {availableYears.length}</span>
-            {latestYear ? <span className="info-pill">Gần nhất: {latestYear.year}</span> : null}
-            <span className="info-pill">Drill thời gian: {getTimeLevelLabel(drillState.level)}</span>
-            <span className="info-pill">Drill khu vực: {getStoreLevelLabel(storeDrillState.level)}</span>
-            <span className="info-pill">Slice thời gian: {currentTimeSliceLabel}</span>
-            <span className="info-pill">Dice khu vực: {currentStoreDiceLabel}</span>
-            <span className="info-pill">Ngữ cảnh thời gian: {timeContextLabel}</span>
-            <span className="info-pill">Ngữ cảnh khu vực: {storeContextLabel}</span>
-          </div>
-
-          {summaryError ? <p className="compact-error-text">{summaryError}</p> : null}
-          {activeTableError ? <p className="compact-error-text">{activeTableError}</p> : null}
-
-          <div className="olap-context-summary">
-            <p className="olap-context-title">{activeContextTitle}</p>
-            <p className="muted">
-              Thời gian: {timeContextLabel}. Khu vực: {storeContextLabel}.
-            </p>
-          </div>
-
-          {activeTableLoading ? (
-            <p className="muted">Đang tải dữ liệu bảng OLAP...</p>
-          ) : (
-            <div className="data-table-shell olap-table-shell compact-table-shell">
-              <table className="data-table compact-data-table">
-                {tableView === "time" ? (
-                  <>
-                    <thead>
-                      <tr>
-                        <th>{getTimeLevelLabel(breakdown?.level ?? "year")}</th>
-                        <th>Doanh thu</th>
-                        <th>Sản lượng</th>
-                        <th>Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {breakdown?.rows.map((row) => (
-                        <tr key={`${breakdown.level}-${row.key}`}>
-                          <td>{row.label}</td>
-                          <td>{formatCurrencyCompact(row.revenue)}</td>
-                          <td>{formatNumber(row.salesVolume)} đơn vị</td>
-                          <td>
-                            {row.canDrillDown && breakdown.drillTargetLevel ? (
-                              <button type="button" className="secondary-button" onClick={() => handleDrillDown(row.key)}>
-                                {getDrillTargetLabel(breakdown.drillTargetLevel)}
-                              </button>
-                            ) : (
-                              <span className="muted">Mức cuối</span>
-                            )}
-                          </td>
-                        </tr>
-                      )) ?? null}
-                    </tbody>
-                  </>
-                ) : null}
-
-                {tableView === "store" ? (
-                  <>
-                    <thead>
-                      <tr>
-                        <th>{getStoreLevelLabel(storeBreakdown?.level ?? "state")}</th>
-                        <th>Doanh thu</th>
-                        <th>Sản lượng</th>
-                        <th>Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {storeBreakdown?.rows.map((row) => (
-                        <tr key={`${storeBreakdown.level}-${row.memberUniqueName}`}>
-                          <td>{row.label}</td>
-                          <td>{formatCurrencyCompact(row.revenue)}</td>
-                          <td>{formatNumber(row.salesVolume)} đơn vị</td>
-                          <td>
-                            {row.canDrillDown && storeBreakdown.drillTargetLevel ? (
-                              <button type="button" className="secondary-button" onClick={() => handleStoreDrillDown(row)}>
-                                {getDrillTargetLabel(storeBreakdown.drillTargetLevel)}
-                              </button>
-                            ) : (
-                              <span className="muted">Mức cuối</span>
-                            )}
-                          </td>
-                        </tr>
-                      )) ?? null}
-                    </tbody>
-                  </>
-                ) : null}
-
-                {tableView === "pivot" ? (
-                  <>
-                    <thead>
-                      <tr>
-                        <th>{pivotOrientation === "rows-time" ? getTimeLevelLabel(pivot?.timeLevel ?? "year") : getStoreLevelLabel(pivot?.storeLevel ?? "state")}</th>
-                        {pivotColumns.map((item) => (
-                          <th key={item.key}>{item.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pivotRows.map((row) => (
-                        <tr key={row.key}>
-                          <td>{row.label}</td>
-                          {pivotColumns.map((column) => (
-                            <td key={`${row.key}-${column.key}`}>
-                              {pivotOrientation === "rows-time"
-                                ? getPivotMetricValue(row.key, column.key)
-                                : getPivotMetricValue(column.key, row.key)}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </>
-                ) : null}
+            <div className="data-table-shell">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{getTimeLabel(timeBreakdown?.level)}</th>
+                    <th>Doanh thu</th>
+                    <th>Sản lượng</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeBreakdown?.rows.map((row, index) => (
+                    <tr key={`${timeBreakdown.level}-${row.key}-${index}`}>
+                      <td>{getTimeDisplayLabel(row, index)}</td>
+                      <td>{formatCurrencyCompact(row.revenue)}</td>
+                      <td>{formatNumber(row.salesVolume)} đơn vị</td>
+                      <td>
+                        {row.canDrillDown ? (
+                          <button type="button" className="secondary-button" onClick={() => drillTime(row, index)}>
+                            Xem chi tiết
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  )) ?? null}
+                </tbody>
               </table>
             </div>
-          )}
-          </div>
+          </DashboardPanel>
         </div>
-      </SectionCard>
+      ) : null}
+
+      {activeView === "store" ? (
+        <DashboardPanel title={`Doanh thu theo ${getStoreLabel(storeBreakdown?.level).toLowerCase()}`}>
+          <div className="chart-panel-stack">
+            <div className="section-action-row">
+              <BreadcrumbTrail
+                backLabel="Quay lại cấp trước"
+                onBack={storeState.level !== "state" ? rollStoreUp : undefined}
+                items={[
+                  { label: "Tổng quan", onClick: storeState.level !== "state" ? resetStoreContext : undefined },
+                  ...(storeState.stateLabel ? [{ label: storeState.stateLabel }] : []),
+                  ...(storeState.cityLabel ? [{ label: storeState.cityLabel }] : []),
+                ]}
+              />
+              <span className="muted">Lọc nhanh theo năm đang chọn.</span>
+            </div>
+            <InteractiveBarChart
+              data={storeChartData}
+              valueLabel="Doanh thu"
+              secondaryLabel="Sản lượng bán"
+              onDrillDown={drillStoreChart}
+            />
+          </div>
+          <DetailTable rows={storeBreakdown?.rows ?? []} onDetail={drillStore} formatCurrency={formatCurrencyCompact} formatNumber={formatNumber} />
+        </DashboardPanel>
+      ) : null}
+
+      {activeView === "customer" ? (
+        <DashboardPanel title="Khách hàng theo khu vực">
+          <div className="chart-panel-stack">
+            <div className="section-action-row">
+              <BreadcrumbTrail
+                backLabel="Quay lại cấp trước"
+                onBack={customerState.level !== "state" ? rollCustomerUp : undefined}
+                items={[
+                  { label: "Tổng quan", onClick: customerState.level !== "state" ? resetCustomerContext : undefined },
+                  ...(customerState.stateLabel ? [{ label: customerState.stateLabel }] : []),
+                  ...(customerState.cityLabel ? [{ label: customerState.cityLabel }] : []),
+                ]}
+              />
+              <span className="muted">{getCustomerLabel(customerBreakdown?.level)} đang được hiển thị.</span>
+            </div>
+            <InteractiveBarChart
+              data={customerChartData}
+              valueLabel="Doanh thu"
+              secondaryLabel="Sản lượng bán"
+              emptyLabel={isCustomerUnavailable ? customerUnavailableMessage : undefined}
+              onDrillDown={drillCustomerChart}
+            />
+          </div>
+          {isCustomerUnavailable ? <p className="muted panel-placeholder">{customerUnavailableMessage}</p> : null}
+          <DetailTable rows={customerBreakdown?.rows ?? []} onDetail={drillCustomer} formatCurrency={formatCurrencyCompact} formatNumber={formatNumber} />
+        </DashboardPanel>
+      ) : null}
+
+      {activeView === "compare" ? (
+        <DashboardPanel title="So sánh 2 chiều">
+          <p className="muted">So sánh doanh thu giữa năm và khu vực cửa hàng.</p>
+          <div className="data-table-shell">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  {comparisonColumns.map((column) => (
+                    <th key={column.key}>{column.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row.key}>
+                    <td>{row.label}</td>
+                    {comparisonColumns.map((column) => {
+                      const cell = comparisonCellMap.get(`${row.key}::${column.key}`);
+                      return <td key={column.key}>{cell ? formatCurrencyCompact(cell.revenue) : "--"}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DashboardPanel>
+      ) : null}
+
+      <AdvancedAnalysisToggle>
+        <div className="data-table-shell">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Năm</th>
+                <th>Doanh thu</th>
+                <th>Sản lượng bán</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary?.rows.map((row) => (
+                <tr key={row.year}>
+                  <td>{row.year}</td>
+                  <td>{formatCurrencyCompact(row.revenue)}</td>
+                  <td>{formatNumber(row.salesVolume)} đơn vị</td>
+                </tr>
+              )) ?? null}
+            </tbody>
+          </table>
+        </div>
+      </AdvancedAnalysisToggle>
+    </div>
+  );
+}
+
+type DetailRow = {
+  label: string;
+  memberUniqueName: string;
+  revenue: number;
+  salesVolume: number;
+  canDrillDown: boolean;
+};
+
+type DetailTableProps<T extends DetailRow> = {
+  rows: T[];
+  onDetail: (row: T) => void;
+  formatCurrency: (value: number) => string;
+  formatNumber: (value: number) => string;
+};
+
+function DetailTable<T extends DetailRow>({ rows, onDetail, formatCurrency, formatNumber }: DetailTableProps<T>) {
+  return (
+    <div className="data-table-shell executive-detail-table">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Tên</th>
+            <th>Doanh thu</th>
+            <th>Sản lượng</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.memberUniqueName}>
+              <td>{row.label}</td>
+              <td>{formatCurrency(row.revenue)}</td>
+              <td>{formatNumber(row.salesVolume)} đơn vị</td>
+              <td>
+                {row.canDrillDown ? (
+                  <button type="button" className="secondary-button" onClick={() => onDetail(row)}>
+                    Xem chi tiết
+                  </button>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

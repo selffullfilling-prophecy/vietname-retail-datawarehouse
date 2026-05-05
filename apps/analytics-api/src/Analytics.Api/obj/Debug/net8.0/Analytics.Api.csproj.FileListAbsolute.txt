@@ -276,3 +276,10 @@ C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\An
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Api\obj\Debug\net8.0\Analytics.Api.pdb
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Api\obj\Debug\net8.0\Analytics.Api.genruntimeconfig.cache
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Api\obj\Debug\net8.0\ref\Analytics.Api.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\appsettings.Development.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\appsettings.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Api.exe
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Api.deps.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Api.runtimeconfig.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Api.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Api.pdb

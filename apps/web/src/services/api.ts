@@ -68,6 +68,22 @@ export type SalesStoreBreakdownResponse = {
   }>;
 };
 
+export type SalesCustomerBreakdownResponse = {
+  generatedAtUtc: string;
+  level: "state" | "city" | "customer";
+  selectedStateLabel: string | null;
+  selectedCityLabel: string | null;
+  drillTargetLevel: "city" | "customer" | null;
+  rows: Array<{
+    key: string;
+    label: string;
+    memberUniqueName: string;
+    revenue: number;
+    salesVolume: number;
+    canDrillDown: boolean;
+  }>;
+};
+
 export type SalesPivotResponse = {
   generatedAtUtc: string;
   timeLevel: "year" | "quarter" | "month";
@@ -157,32 +173,43 @@ export type InventoryPivotResponse = {
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5056";
+const SHOULD_LOG_API = import.meta.env.DEV || import.meta.env.VITE_DEBUG_API === "true";
 
-export async function getHealth(): Promise<HealthResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/health`);
-  if (!response.ok) {
-    throw new Error(`Health request failed with status ${response.status}`);
+async function fetchJson<T>(url: string, label: string): Promise<T> {
+  const startedAt = performance.now();
+
+  if (SHOULD_LOG_API) {
+    console.info(`[analytics-web] ${label} -> GET ${url}`);
   }
 
-  return response.json();
+  const response = await fetch(url);
+  const elapsedMs = Math.round(performance.now() - startedAt);
+
+  if (!response.ok) {
+    if (SHOULD_LOG_API) {
+      console.error(`[analytics-web] ${label} <- ${response.status} ${response.statusText} (${elapsedMs} ms)`);
+    }
+
+    throw new Error(`${label} request failed with status ${response.status}`);
+  }
+
+  if (SHOULD_LOG_API) {
+    console.info(`[analytics-web] ${label} <- ${response.status} (${elapsedMs} ms)`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function getHealth(): Promise<HealthResponse> {
+  return fetchJson<HealthResponse>(`${API_BASE_URL}/api/health`, "Health");
 }
 
 export async function getMetadataOverview(): Promise<MetadataOverviewResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/metadata/overview`);
-  if (!response.ok) {
-    throw new Error(`Metadata request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<MetadataOverviewResponse>(`${API_BASE_URL}/api/metadata/overview`, "Metadata overview");
 }
 
 export async function getSalesSummaryByYear(): Promise<YearSalesSummaryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/sales/summary/by-year`);
-  if (!response.ok) {
-    throw new Error(`Sales summary request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<YearSalesSummaryResponse>(`${API_BASE_URL}/api/sales/summary/by-year`, "Sales summary by year");
 }
 
 export async function getSalesTimeBreakdown(
@@ -210,12 +237,10 @@ export async function getSalesTimeBreakdown(
     params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/sales/time-breakdown?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Sales time breakdown request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<SalesTimeBreakdownResponse>(
+    `${API_BASE_URL}/api/sales/time-breakdown?${params.toString()}`,
+    "Sales time breakdown",
+  );
 }
 
 export async function getSalesStoreBreakdown(
@@ -239,12 +264,37 @@ export async function getSalesStoreBreakdown(
     params.set("quarter", quarter);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/sales/store-breakdown?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Sales store breakdown request failed with status ${response.status}`);
+  return fetchJson<SalesStoreBreakdownResponse>(
+    `${API_BASE_URL}/api/sales/store-breakdown?${params.toString()}`,
+    "Sales store breakdown",
+  );
+}
+
+export async function getSalesCustomerBreakdown(
+  level: "state" | "city" | "customer",
+  stateMemberUniqueName?: string,
+  cityMemberUniqueName?: string,
+  year?: string,
+  quarter?: string,
+): Promise<SalesCustomerBreakdownResponse> {
+  const params = new URLSearchParams({ level });
+  if (stateMemberUniqueName) {
+    params.set("stateMemberUniqueName", stateMemberUniqueName);
+  }
+  if (cityMemberUniqueName) {
+    params.set("cityMemberUniqueName", cityMemberUniqueName);
+  }
+  if (year) {
+    params.set("year", year);
+  }
+  if (quarter) {
+    params.set("quarter", quarter);
   }
 
-  return response.json();
+  return fetchJson<SalesCustomerBreakdownResponse>(
+    `${API_BASE_URL}/api/sales/customer-breakdown?${params.toString()}`,
+    "Sales customer breakdown",
+  );
 }
 
 export async function getSalesPivot(
@@ -273,21 +323,14 @@ export async function getSalesPivot(
     params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/sales/pivot?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Sales pivot request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<SalesPivotResponse>(`${API_BASE_URL}/api/sales/pivot?${params.toString()}`, "Sales comparison");
 }
 
 export async function getInventorySummaryByYear(): Promise<YearInventorySummaryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/inventory/summary/by-year`);
-  if (!response.ok) {
-    throw new Error(`Inventory summary request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<YearInventorySummaryResponse>(
+    `${API_BASE_URL}/api/inventory/summary/by-year`,
+    "Inventory summary by year",
+  );
 }
 
 export async function getInventoryTimeBreakdown(
@@ -315,12 +358,10 @@ export async function getInventoryTimeBreakdown(
     params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/inventory/time-breakdown?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Inventory time breakdown request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<InventoryTimeBreakdownResponse>(
+    `${API_BASE_URL}/api/inventory/time-breakdown?${params.toString()}`,
+    "Inventory time breakdown",
+  );
 }
 
 export async function getInventoryStoreBreakdown(
@@ -344,12 +385,10 @@ export async function getInventoryStoreBreakdown(
     params.set("quarter", quarter);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/inventory/store-breakdown?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Inventory store breakdown request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<InventoryStoreBreakdownResponse>(
+    `${API_BASE_URL}/api/inventory/store-breakdown?${params.toString()}`,
+    "Inventory store breakdown",
+  );
 }
 
 export async function getInventoryPivot(
@@ -378,10 +417,8 @@ export async function getInventoryPivot(
     params.set("storeMemberUniqueName", storeMemberUniqueName);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/inventory/pivot?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Inventory pivot request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return fetchJson<InventoryPivotResponse>(
+    `${API_BASE_URL}/api/inventory/pivot?${params.toString()}`,
+    "Inventory comparison",
+  );
 }

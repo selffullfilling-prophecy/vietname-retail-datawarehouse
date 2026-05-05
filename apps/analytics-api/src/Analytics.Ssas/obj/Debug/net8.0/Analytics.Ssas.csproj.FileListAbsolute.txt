@@ -30,3 +30,6 @@ C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\An
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\refint\Analytics.Ssas.dll
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\Analytics.Ssas.pdb
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Ssas\obj\Debug\net8.0\ref\Analytics.Ssas.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Ssas.deps.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Ssas.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Ssas.pdb

@@ -184,6 +184,76 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         }
     }
 
+    public SalesCustomerBreakdownResult GetCustomerBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter)
+    {
+        var normalizedLevel = NormalizeCustomerLevel(level);
+        var normalizedStateUniqueName = NormalizeStoreParentMember(stateMemberUniqueName, normalizedLevel, "state");
+        var normalizedCityUniqueName = NormalizeStoreParentMember(cityMemberUniqueName, normalizedLevel, "city");
+        var normalizedYear = NormalizeOptionalYear(year);
+        var normalizedQuarter = NormalizeOptionalQuarter(quarter, normalizedYear);
+        var timeFilterExpression = BuildTimeFilterExpression(normalizedYear, normalizedQuarter);
+        var mdx = BuildCustomerBreakdownMdx(normalizedLevel, normalizedStateUniqueName, normalizedCityUniqueName, timeFilterExpression);
+
+        try
+        {
+            using var connection = new AdomdConnection(BuildConnectionString());
+            connection.Open();
+
+            using var command = new AdomdCommand(mdx, connection);
+            var cellSet = command.ExecuteCellSet();
+
+            var rows = new List<SalesCustomerBreakdownRowDto>();
+            if (cellSet.Axes.Count < 2)
+            {
+                return new SalesCustomerBreakdownResult(
+                    Level: normalizedLevel,
+                    SelectedStateLabel: normalizedLevel is "city" or "customer" ? ExtractLabelFromUniqueName(normalizedStateUniqueName) : null,
+                    SelectedCityLabel: normalizedLevel == "customer" ? ExtractLabelFromUniqueName(normalizedCityUniqueName) : null,
+                    DrillTargetLevel: normalizedLevel switch
+                    {
+                        "state" => "city",
+                        "city" => "customer",
+                        _ => null
+                    },
+                    Rows: rows);
+            }
+
+            var columnsCount = cellSet.Axes[0].Set.Tuples.Count;
+            var rowTuples = cellSet.Axes[1].Set.Tuples;
+
+            for (var rowIndex = 0; rowIndex < rowTuples.Count; rowIndex++)
+            {
+                var member = rowTuples[rowIndex].Members[0];
+                var revenue = ReadCellDecimal(cellSet, rowIndex, 0, columnsCount);
+                var salesVolume = ReadCellDecimal(cellSet, rowIndex, 1, columnsCount);
+
+                rows.Add(new SalesCustomerBreakdownRowDto(
+                    Key: member.Caption,
+                    Label: member.Caption,
+                    MemberUniqueName: member.UniqueName,
+                    Revenue: revenue,
+                    SalesVolume: salesVolume,
+                    CanDrillDown: normalizedLevel is "state" or "city"));
+            }
+
+            return new SalesCustomerBreakdownResult(
+                Level: normalizedLevel,
+                SelectedStateLabel: normalizedLevel is "city" or "customer" ? ExtractLabelFromUniqueName(normalizedStateUniqueName) : null,
+                SelectedCityLabel: normalizedLevel == "customer" ? ExtractLabelFromUniqueName(normalizedCityUniqueName) : null,
+                DrillTargetLevel: normalizedLevel switch
+                {
+                    "state" => "city",
+                    "city" => "customer",
+                    _ => null
+                },
+                Rows: rows);
+        }
+        catch (Exception ex)
+        {
+            throw SsasError.QueryFailed("Sales customer breakdown query", _settings, mdx, ex);
+        }
+    }
+
     public SalesPivotResult GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         var normalizedTimeLevel = NormalizeTimeLevel(timeLevel);
@@ -337,6 +407,17 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
         };
     }
 
+    private static string NormalizeCustomerLevel(string level)
+    {
+        return level.Trim().ToLowerInvariant() switch
+        {
+            "state" => "state",
+            "city" => "city",
+            "customer" => "customer",
+            _ => throw new ArgumentException("Customer level must be one of: state, city, customer.", nameof(level))
+        };
+    }
+
     private static string? NormalizeOptionalYear(string? year)
     {
         if (string.IsNullOrWhiteSpace(year))
@@ -386,7 +467,7 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
     {
         var isRequired =
             (level == "city" && parentKind == "state") ||
-            (level == "store" && (parentKind == "state" || parentKind == "city"));
+            (level is "store" or "customer" && (parentKind == "state" || parentKind == "city"));
 
         if (!isRequired)
         {
@@ -433,6 +514,22 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
             BuildWhereClause(timeFilterExpression));
     }
 
+    private string BuildCustomerBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? timeFilterExpression)
+    {
+        return string.Join(
+            Environment.NewLine,
+            "WITH",
+            $"    SET [SelectedCustomerMembers] AS {BuildCustomerSetExpression(level, stateMemberUniqueName, cityMemberUniqueName)}",
+            "SELECT",
+            "    {",
+            "        [Measures].[Tongtien],",
+            "        [Measures].[Soluongban]",
+            "    } ON COLUMNS,",
+            "    NON EMPTY [SelectedCustomerMembers] ON ROWS",
+            $"FROM {_settings.CubeMdxIdentifier}",
+            BuildWhereClause(timeFilterExpression));
+    }
+
     private string BuildPivotMdx(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
     {
         return string.Join(
@@ -469,6 +566,17 @@ public sealed class SalesAnalyticsProvider : ISalesAnalyticsProvider
             "store" => string.IsNullOrWhiteSpace(storeMemberUniqueName)
                 ? $"Descendants(StrToMember('{EscapeMdxString(cityMemberUniqueName!)}', CONSTRAINED), [Dim Store].[Hierarchy].[Macuahang])"
                 : $"{{ StrToMember('{EscapeMdxString(storeMemberUniqueName)}', CONSTRAINED) }}",
+            _ => throw new ArgumentOutOfRangeException(nameof(level))
+        };
+    }
+
+    private static string BuildCustomerSetExpression(string level, string? stateMemberUniqueName, string? cityMemberUniqueName)
+    {
+        return level switch
+        {
+            "state" => "[Dim Customer].[Hierarchy].[Bang].Members",
+            "city" => $"Descendants(StrToMember('{EscapeMdxString(stateMemberUniqueName!)}', CONSTRAINED), [Dim Customer].[Hierarchy].[Thanhpho])",
+            "customer" => $"Descendants(StrToMember('{EscapeMdxString(cityMemberUniqueName!)}', CONSTRAINED), [Dim Customer].[Hierarchy].[Makh])",
             _ => throw new ArgumentOutOfRangeException(nameof(level))
         };
     }

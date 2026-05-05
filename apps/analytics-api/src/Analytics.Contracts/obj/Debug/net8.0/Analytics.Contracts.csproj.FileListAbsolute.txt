@@ -22,3 +22,6 @@ C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\An
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\refint\Analytics.Contracts.dll
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\Analytics.Contracts.pdb
 C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\src\Analytics.Contracts\obj\Debug\net8.0\ref\Analytics.Contracts.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Contracts.deps.json
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Contracts.dll
+C:\Users\Admin\Documents\vietname-retail-datawarehouse\apps\analytics-api\tmp\api-build-log-check\Analytics.Contracts.pdb
