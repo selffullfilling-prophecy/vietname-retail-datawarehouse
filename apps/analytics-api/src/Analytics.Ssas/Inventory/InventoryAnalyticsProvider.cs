@@ -54,7 +54,7 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
-    public InventoryTimeBreakdownResult GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
+    public InventoryTimeBreakdownResult GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName, string? productMemberUniqueName)
     {
         var normalizedLevel = NormalizeTimeLevel(level);
         var normalizedYear = NormalizeRequiredYear(year, normalizedLevel);
@@ -63,7 +63,8 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
             NormalizeOptionalUniqueName(stateMemberUniqueName),
             NormalizeOptionalUniqueName(cityMemberUniqueName),
             NormalizeOptionalUniqueName(storeMemberUniqueName));
-        var mdx = BuildTimeBreakdownMdx(normalizedLevel, normalizedYear, normalizedQuarter, storeFilterExpression);
+        var productFilterExpression = BuildMemberFilterExpression(NormalizeOptionalUniqueName(productMemberUniqueName));
+        var mdx = BuildTimeBreakdownMdx(normalizedLevel, normalizedYear, normalizedQuarter, storeFilterExpression, productFilterExpression);
 
         try
         {
@@ -109,7 +110,7 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
-    public InventoryStoreBreakdownResult GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter)
+    public InventoryStoreBreakdownResult GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter, string? productMemberUniqueName)
     {
         var normalizedLevel = NormalizeStoreLevel(level);
         var normalizedStateUniqueName = NormalizeStoreParentMember(stateMemberUniqueName, normalizedLevel, "state");
@@ -117,7 +118,8 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         var normalizedYear = NormalizeOptionalYear(year);
         var normalizedQuarter = NormalizeOptionalQuarter(quarter, normalizedYear);
         var timeFilterExpression = BuildTimeFilterExpression(normalizedYear, normalizedQuarter);
-        var mdx = BuildStoreBreakdownMdx(normalizedLevel, normalizedStateUniqueName, normalizedCityUniqueName, timeFilterExpression);
+        var productFilterExpression = BuildMemberFilterExpression(NormalizeOptionalUniqueName(productMemberUniqueName));
+        var mdx = BuildStoreBreakdownMdx(normalizedLevel, normalizedStateUniqueName, normalizedCityUniqueName, timeFilterExpression, productFilterExpression);
 
         try
         {
@@ -174,6 +176,54 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         catch (Exception ex)
         {
             throw SsasError.QueryFailed("Inventory store breakdown query", _settings, mdx, ex);
+        }
+    }
+
+    public IReadOnlyList<InventoryProductBreakdownRowDto> GetProductBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
+    {
+        var normalizedLevel = NormalizeProductLevel(level);
+        var normalizedYear = NormalizeOptionalYear(year);
+        var normalizedQuarter = NormalizeOptionalQuarter(quarter, normalizedYear);
+        var mdx = BuildOneAxisBreakdownMdx(
+            BuildProductSetExpression(normalizedLevel),
+            BuildTimeFilterExpression(normalizedYear, normalizedQuarter),
+            BuildStoreFilterExpression(
+                NormalizeOptionalUniqueName(stateMemberUniqueName),
+                NormalizeOptionalUniqueName(cityMemberUniqueName),
+                NormalizeOptionalUniqueName(storeMemberUniqueName)));
+
+        try
+        {
+            using var connection = new AdomdConnection(BuildConnectionString());
+            connection.Open();
+
+            using var command = new AdomdCommand(mdx, connection);
+            var cellSet = command.ExecuteCellSet();
+
+            var rows = new List<InventoryProductBreakdownRowDto>();
+            if (cellSet.Axes.Count < 2)
+            {
+                return rows;
+            }
+
+            var columnsCount = cellSet.Axes[0].Set.Tuples.Count;
+            var rowTuples = cellSet.Axes[1].Set.Tuples;
+
+            for (var rowIndex = 0; rowIndex < rowTuples.Count; rowIndex++)
+            {
+                var member = rowTuples[rowIndex].Members[0];
+                rows.Add(new InventoryProductBreakdownRowDto(
+                    Key: member.UniqueName,
+                    Label: member.Caption,
+                    MemberUniqueName: member.UniqueName,
+                    AverageInventory: ReadCellDecimal(cellSet, rowIndex, 0, columnsCount)));
+            }
+
+            return rows;
+        }
+        catch (Exception ex)
+        {
+            throw SsasError.QueryFailed("Inventory product breakdown query", _settings, mdx, ex);
         }
     }
 
@@ -267,6 +317,81 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         }
     }
 
+    public InventoryAdvancedPivotResponse GetAdvancedPivot(string rowDimension, string rowLevel, string columnDimension, string columnLevel, string measure, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName, string? productMemberUniqueName)
+    {
+        var normalizedRowDimension = NormalizePivotDimension(rowDimension);
+        var normalizedColumnDimension = NormalizePivotDimension(columnDimension);
+        if (normalizedRowDimension == normalizedColumnDimension)
+        {
+            throw new ArgumentException("Row dimension and column dimension must be different.");
+        }
+
+        var normalizedRowLevel = NormalizeDimensionLevel(normalizedRowDimension, rowLevel);
+        var normalizedColumnLevel = NormalizeDimensionLevel(normalizedColumnDimension, columnLevel);
+        var normalizedMeasure = NormalizeInventoryMeasure(measure);
+        var measureExpression = BuildInventoryMeasureExpression(normalizedMeasure);
+        var normalizedYear = NormalizeOptionalYear(year);
+        var normalizedQuarter = NormalizeOptionalQuarter(quarter, normalizedYear);
+        var mdx = BuildAdvancedPivotMdx(
+            BuildDimensionSetExpression(normalizedRowDimension, normalizedRowLevel),
+            BuildDimensionSetExpression(normalizedColumnDimension, normalizedColumnLevel),
+            measureExpression,
+            BuildTimeFilterExpression(normalizedYear, normalizedQuarter),
+            BuildStoreFilterExpression(
+                NormalizeOptionalUniqueName(stateMemberUniqueName),
+                NormalizeOptionalUniqueName(cityMemberUniqueName),
+                NormalizeOptionalUniqueName(storeMemberUniqueName)),
+            BuildMemberFilterExpression(NormalizeOptionalUniqueName(productMemberUniqueName)));
+
+        try
+        {
+            using var connection = new AdomdConnection(BuildConnectionString());
+            connection.Open();
+
+            using var command = new AdomdCommand(mdx, connection);
+            var cellSet = command.ExecuteCellSet();
+
+            var rowAxis = new Dictionary<string, InventoryAdvancedPivotAxisMemberDto>();
+            var columnAxis = new Dictionary<string, InventoryAdvancedPivotAxisMemberDto>();
+            var cells = new List<InventoryAdvancedPivotCellDto>();
+
+            if (cellSet.Axes.Count >= 2)
+            {
+                var rowTuples = cellSet.Axes[1].Set.Tuples;
+                for (var rowIndex = 0; rowIndex < rowTuples.Count; rowIndex++)
+                {
+                    var tuple = rowTuples[rowIndex];
+                    if (tuple.Members.Count < 2)
+                    {
+                        continue;
+                    }
+
+                    var rowMember = tuple.Members[0];
+                    var columnMember = tuple.Members[1];
+                    rowAxis.TryAdd(rowMember.UniqueName, new InventoryAdvancedPivotAxisMemberDto(rowMember.UniqueName, rowMember.Caption, rowMember.UniqueName));
+                    columnAxis.TryAdd(columnMember.UniqueName, new InventoryAdvancedPivotAxisMemberDto(columnMember.UniqueName, columnMember.Caption, columnMember.UniqueName));
+                    cells.Add(new InventoryAdvancedPivotCellDto(rowMember.UniqueName, columnMember.UniqueName, ReadCellDecimal(cellSet, rowIndex, 0, 1)));
+                }
+            }
+
+            return new InventoryAdvancedPivotResponse(
+                GeneratedAtUtc: DateTime.UtcNow,
+                RowDimension: normalizedRowDimension,
+                RowLevel: normalizedRowLevel,
+                ColumnDimension: normalizedColumnDimension,
+                ColumnLevel: normalizedColumnLevel,
+                Measure: normalizedMeasure,
+                MeasureLabel: normalizedMeasure == "inventoryQuantity" ? "Tồn kho tổng" : "Tồn kho trung bình",
+                RowAxis: rowAxis.Values.ToList(),
+                ColumnAxis: columnAxis.Values.ToList(),
+                Cells: cells);
+        }
+        catch (Exception ex)
+        {
+            throw SsasError.QueryFailed("Inventory advanced pivot query", _settings, mdx, ex);
+        }
+    }
+
     private string BuildConnectionString()
     {
         return _settings.ConnectionString;
@@ -326,6 +451,51 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
             "city" => "city",
             "store" => "store",
             _ => throw new ArgumentException("Store level must be one of: state, city, store.", nameof(level))
+        };
+    }
+
+    private static string NormalizeProductLevel(string level)
+    {
+        return level.Trim().ToLowerInvariant() switch
+        {
+            "mamh" or "product" => "mamh",
+            "mota" or "description" => "mota",
+            "kichco" or "size" => "kichco",
+            "trongluong" or "weight" => "trongluong",
+            _ => throw new ArgumentException("Product level must be one of: mamh, mota, kichco, trongluong.", nameof(level))
+        };
+    }
+
+    private static string NormalizePivotDimension(string dimension)
+    {
+        return dimension.Trim().ToLowerInvariant() switch
+        {
+            "time" => "time",
+            "store" => "store",
+            "product" => "product",
+            "customer" => throw new ArgumentException("Inventory pivot does not support the Customer dimension.", nameof(dimension)),
+            _ => throw new ArgumentException("Dimension must be one of: time, store, product.", nameof(dimension))
+        };
+    }
+
+    private static string NormalizeDimensionLevel(string dimension, string level)
+    {
+        return dimension switch
+        {
+            "time" => NormalizeTimeLevel(level),
+            "store" => NormalizeStoreLevel(level),
+            "product" => NormalizeProductLevel(level),
+            _ => throw new ArgumentOutOfRangeException(nameof(dimension))
+        };
+    }
+
+    private static string NormalizeInventoryMeasure(string measure)
+    {
+        return measure.Trim().ToLowerInvariant() switch
+        {
+            "averageinventory" or "inventoryaveragequantity" => "averageInventory",
+            "inventoryquantity" or "inventoryquantitysum" or "soluongtonkho" => "inventoryQuantity",
+            _ => throw new ArgumentException("Inventory measure must be one of: averageInventory, inventoryQuantity.", nameof(measure))
         };
     }
 
@@ -393,7 +563,7 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         return memberUniqueName;
     }
 
-    private string BuildTimeBreakdownMdx(string level, string? year, string? quarter, string? storeFilterExpression)
+    private string BuildTimeBreakdownMdx(string level, string? year, string? quarter, string? storeFilterExpression, string? productFilterExpression)
     {
         return string.Join(
             Environment.NewLine,
@@ -405,10 +575,10 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
             "    } ON COLUMNS,",
             "    NON EMPTY [SelectedTimeMembers] ON ROWS",
             $"FROM {_settings.CubeMdxIdentifier}",
-            BuildWhereClause(storeFilterExpression));
+            BuildWhereClause(storeFilterExpression, productFilterExpression));
     }
 
-    private string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? timeFilterExpression)
+    private string BuildStoreBreakdownMdx(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? timeFilterExpression, string? productFilterExpression)
     {
         return string.Join(
             Environment.NewLine,
@@ -420,7 +590,36 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
             "    } ON COLUMNS,",
             "    NON EMPTY [SelectedStoreMembers] ON ROWS",
             $"FROM {_settings.CubeMdxIdentifier}",
-            BuildWhereClause(timeFilterExpression));
+            BuildWhereClause(timeFilterExpression, productFilterExpression));
+    }
+
+    private string BuildOneAxisBreakdownMdx(string rowSetExpression, params string?[] filterExpressions)
+    {
+        return string.Join(
+            Environment.NewLine,
+            "WITH",
+            $"    SET [SelectedMembers] AS {rowSetExpression}",
+            "SELECT",
+            "    {",
+            "        [Measures].[Inventory Average Quantity]",
+            "    } ON COLUMNS,",
+            "    NON EMPTY [SelectedMembers] ON ROWS",
+            $"FROM {_settings.CubeMdxIdentifier}",
+            BuildWhereClause(filterExpressions));
+    }
+
+    private string BuildAdvancedPivotMdx(string rowSetExpression, string columnSetExpression, string measureExpression, params string?[] filterExpressions)
+    {
+        return string.Join(
+            Environment.NewLine,
+            "WITH",
+            $"    SET [RowMembers] AS {rowSetExpression}",
+            $"    SET [ColumnMembers] AS {columnSetExpression}",
+            "SELECT",
+            $"    {{ {measureExpression} }} ON COLUMNS,",
+            "    NON EMPTY CrossJoin([RowMembers], [ColumnMembers]) ON ROWS",
+            $"FROM {_settings.CubeMdxIdentifier}",
+            BuildWhereClause(filterExpressions));
     }
 
     private string BuildPivotMdx(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
@@ -462,6 +661,61 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
         };
     }
 
+    private static string BuildProductSetExpression(string level)
+    {
+        return level switch
+        {
+            "mamh" => "[Dim Product].[Mamh].[Mamh].Members",
+            "mota" => "[Dim Product].[Mota].[Mota].Members",
+            "kichco" => "[Dim Product].[Kichco].[Kichco].Members",
+            "trongluong" => "[Dim Product].[Trongluong].[Trongluong].Members",
+            _ => throw new ArgumentOutOfRangeException(nameof(level))
+        };
+    }
+
+    private static string BuildDimensionSetExpression(string dimension, string level)
+    {
+        return dimension switch
+        {
+            "time" => BuildTimeAxisSetExpression(level),
+            "store" => BuildStoreAxisSetExpression(level),
+            "product" => BuildProductSetExpression(level),
+            _ => throw new ArgumentOutOfRangeException(nameof(dimension))
+        };
+    }
+
+    private static string BuildTimeAxisSetExpression(string level)
+    {
+        return level switch
+        {
+            "year" => "[Dim Time].[Nam].[Nam].Members",
+            "quarter" => "[Dim Time].[Hierarchy].[Quy].Members",
+            "month" => "[Dim Time].[Hierarchy].[Thang].Members",
+            _ => throw new ArgumentOutOfRangeException(nameof(level))
+        };
+    }
+
+    private static string BuildStoreAxisSetExpression(string level)
+    {
+        return level switch
+        {
+            "state" => "[Dim Store].[Hierarchy].[Bang].Members",
+            "city" => "[Dim Store].[Hierarchy].[Thanhpho].Members",
+            "store" => "[Dim Store].[Hierarchy].[Macuahang].Members",
+            _ => throw new ArgumentOutOfRangeException(nameof(level))
+        };
+    }
+
+    private static string BuildInventoryMeasureExpression(string measure)
+    {
+        return measure switch
+        {
+            "averageInventory" => "[Measures].[Inventory Average Quantity]",
+            "inventoryQuantity" => "[Measures].[Inventory Quantity Sum]",
+            _ => throw new ArgumentOutOfRangeException(nameof(measure))
+        };
+    }
+
     private static string? BuildTimeFilterExpression(string? year, string? quarter)
     {
         if (string.IsNullOrWhiteSpace(year))
@@ -485,7 +739,17 @@ public sealed class InventoryAnalyticsProvider : IInventoryAnalyticsProvider
             return null;
         }
 
-        return $"StrToMember('{EscapeMdxString(selectedMember)}', CONSTRAINED)";
+        return BuildMemberFilterExpression(selectedMember);
+    }
+
+    private static string? BuildMemberFilterExpression(string? memberUniqueName)
+    {
+        if (string.IsNullOrWhiteSpace(memberUniqueName))
+        {
+            return null;
+        }
+
+        return $"StrToMember('{EscapeMdxString(memberUniqueName)}', CONSTRAINED)";
     }
 
     private static string BuildWhereClause(params string?[] expressions)

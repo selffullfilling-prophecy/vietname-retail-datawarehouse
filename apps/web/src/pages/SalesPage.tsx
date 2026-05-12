@@ -6,8 +6,12 @@ import { QuickTimeFilter } from "../components/QuickTimeFilter";
 import { SectionCard } from "../components/SectionCard";
 import {
   getSalesStoreBreakdown,
+  getSalesCustomerBreakdown,
+  getSalesProductBreakdown,
   getSalesSummaryByYear,
   getSalesTimeBreakdown,
+  type SalesCustomerBreakdownResponse,
+  type SalesProductBreakdownResponse,
   type SalesStoreBreakdownResponse,
   type SalesTimeBreakdownResponse,
   type YearSalesSummaryResponse,
@@ -41,8 +45,12 @@ export function SalesPage() {
   const [timeBreakdown, setTimeBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
   const [yearComparisonBreakdown, setYearComparisonBreakdown] = useState<SalesTimeBreakdownResponse | null>(null);
   const [locationBreakdown, setLocationBreakdown] = useState<SalesStoreBreakdownResponse | null>(null);
+  const [productOptions, setProductOptions] = useState<SalesProductBreakdownResponse["rows"]>([]);
+  const [customerOptions, setCustomerOptions] = useState<SalesCustomerBreakdownResponse["rows"]>([]);
   const [timeState, setTimeState] = useState<TimeState>({ level: "year" });
   const [locationState, setLocationState] = useState<LocationState>({});
+  const [productFilter, setProductFilter] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [isTimeLoading, setIsTimeLoading] = useState(true);
@@ -86,6 +94,34 @@ export function SalesPage() {
   useEffect(() => {
     let isMounted = true;
 
+    async function loadDimensionFilters() {
+      try {
+        const [products, customers] = await Promise.all([
+          getSalesProductBreakdown({ level: "mamh" }),
+          getSalesCustomerBreakdown({ level: "customer" }),
+        ]);
+
+        if (isMounted) {
+          setProductOptions(products.rows);
+          setCustomerOptions(customers.rows);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Không thể tải bộ lọc sản phẩm/khách hàng. Vui lòng kiểm tra API.");
+        }
+      }
+    }
+
+    void loadDimensionFilters();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
     async function loadTimeBreakdown() {
       try {
         setIsTimeLoading(true);
@@ -97,6 +133,8 @@ export function SalesPage() {
           locationState.stateMemberUniqueName,
           locationState.cityMemberUniqueName,
           locationState.storeMemberUniqueName,
+          productFilter,
+          customerFilter,
         );
 
         if (isMounted) {
@@ -118,7 +156,7 @@ export function SalesPage() {
     return () => {
       isMounted = false;
     };
-  }, [locationState, timeState]);
+  }, [customerFilter, locationState, productFilter, timeState]);
 
   useEffect(() => {
     let isMounted = true;
@@ -134,6 +172,8 @@ export function SalesPage() {
           locationState.stateMemberUniqueName,
           locationState.cityMemberUniqueName,
           locationState.storeMemberUniqueName,
+          productFilter,
+          customerFilter,
         );
 
         if (isMounted) {
@@ -155,7 +195,7 @@ export function SalesPage() {
     return () => {
       isMounted = false;
     };
-  }, [locationState]);
+  }, [customerFilter, locationState, productFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -170,6 +210,8 @@ export function SalesPage() {
           locationState.cityMemberUniqueName,
           activeTimeYear,
           activeTimeQuarter,
+          productFilter,
+          customerFilter,
         );
 
         if (isMounted) {
@@ -191,7 +233,7 @@ export function SalesPage() {
     return () => {
       isMounted = false;
     };
-  }, [activeTimeQuarter, activeTimeYear, locationLevel, locationState]);
+  }, [activeTimeQuarter, activeTimeYear, customerFilter, locationLevel, locationState, productFilter]);
 
   const timeTotal = useMemo(
     () => (timeBreakdown?.rows ?? []).reduce((sum, row) => sum + row.revenue, 0),
@@ -432,6 +474,8 @@ export function SalesPage() {
   function resetOverview() {
     clearTime();
     clearLocation();
+    setProductFilter("");
+    setCustomerFilter("");
   }
 
   function timeContextLabel() {
@@ -456,6 +500,14 @@ export function SalesPage() {
     }
 
     return locationState.stateLabel ?? "Toàn bộ khu vực";
+  }
+
+  function productContextLabel() {
+    return productOptions.find((option) => option.memberUniqueName === productFilter)?.label ?? "Tất cả sản phẩm";
+  }
+
+  function customerContextLabel() {
+    return customerOptions.find((option) => option.memberUniqueName === customerFilter)?.label ?? "Tất cả khách hàng";
   }
 
   function timePanelTitle() {
@@ -556,13 +608,35 @@ export function SalesPage() {
             </button>
           ) : null}
         </span>
+        <label className="context-chip context-select-chip">
+          <strong>Sản phẩm:</strong>
+          <select value={productFilter} onChange={(event) => setProductFilter(event.target.value)}>
+            <option value="">Tất cả sản phẩm</option>
+            {productOptions.map((option) => (
+              <option key={option.memberUniqueName} value={option.memberUniqueName}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="context-chip context-select-chip">
+          <strong>Khách hàng:</strong>
+          <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)}>
+            <option value="">Tất cả khách hàng</option>
+            {customerOptions.map((option) => (
+              <option key={option.memberUniqueName} value={option.memberUniqueName}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="button" className="secondary-button" onClick={resetOverview}>
           Quay lại tổng quan
         </button>
       </div>
 
       <div className="analysis-chart-grid">
-        <SectionCard title={timePanelTitle()} description={`Đang lọc theo khu vực: ${locationContextLabel()}.`}>
+        <SectionCard title={timePanelTitle()} description={`Đang lọc theo khu vực: ${locationContextLabel()}. Sản phẩm: ${productContextLabel()}. Khách hàng: ${customerContextLabel()}.`}>
           <InteractiveTrendChart
             ariaLabel="Xu hướng doanh thu"
             data={timeChartData}
@@ -573,7 +647,7 @@ export function SalesPage() {
           />
         </SectionCard>
 
-        <SectionCard title={locationPanelTitle()} description={`Đang lọc theo thời gian: ${timeContextLabel()}.`}>
+        <SectionCard title={locationPanelTitle()} description={`Đang lọc theo thời gian: ${timeContextLabel()}. Sản phẩm: ${productContextLabel()}. Khách hàng: ${customerContextLabel()}.`}>
           {locationLevel !== "state" ? (
             <label className="chart-search">
               <span>Tìm nhanh</span>

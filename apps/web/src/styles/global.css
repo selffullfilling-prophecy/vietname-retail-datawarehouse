@@ -804,6 +804,47 @@ body,
   font-weight: 700;
 }
 
+.context-select-chip select,
+.pivot-controls select {
+  min-height: 32px;
+  max-width: 220px;
+  border: 1px solid rgba(16, 33, 53, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #102135;
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.context-select-chip select {
+  padding: 4px 8px;
+}
+
+.pivot-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(16, 33, 53, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(16, 33, 53, 0.06);
+}
+
+.pivot-controls label {
+  display: grid;
+  gap: 6px;
+  color: #57697d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pivot-controls select {
+  min-width: 150px;
+  padding: 7px 9px;
+}
+
 .analysis-chart-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);

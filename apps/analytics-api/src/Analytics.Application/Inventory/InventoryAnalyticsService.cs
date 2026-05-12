@@ -21,9 +21,9 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             Rows: rows);
     }
 
-    public InventoryTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
+    public InventoryTimeBreakdownResponse GetTimeBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName, string? productMemberUniqueName)
     {
-        var result = _inventoryAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);
+        var result = _inventoryAnalyticsProvider.GetTimeBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName, productMemberUniqueName);
 
         return new InventoryTimeBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,
@@ -34,9 +34,9 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             Rows: result.Rows);
     }
 
-    public InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter)
+    public InventoryStoreBreakdownResponse GetStoreBreakdown(string level, string? stateMemberUniqueName, string? cityMemberUniqueName, string? year, string? quarter, string? productMemberUniqueName)
     {
-        var result = _inventoryAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year, quarter);
+        var result = _inventoryAnalyticsProvider.GetStoreBreakdown(level, stateMemberUniqueName, cityMemberUniqueName, year, quarter, productMemberUniqueName);
 
         return new InventoryStoreBreakdownResponse(
             GeneratedAtUtc: DateTime.UtcNow,
@@ -45,6 +45,16 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             SelectedCityLabel: result.SelectedCityLabel,
             DrillTargetLevel: result.DrillTargetLevel,
             Rows: result.Rows);
+    }
+
+    public InventoryProductBreakdownResponse GetProductBreakdown(string level, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
+    {
+        var rows = _inventoryAnalyticsProvider.GetProductBreakdown(level, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName);
+
+        return new InventoryProductBreakdownResponse(
+            GeneratedAtUtc: DateTime.UtcNow,
+            Level: level,
+            Rows: rows);
     }
 
     public InventoryPivotResponse GetPivot(string timeLevel, string? year, string? quarter, string storeLevel, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName)
@@ -62,5 +72,10 @@ public sealed class InventoryAnalyticsService : IInventoryAnalyticsService
             TimeAxis: result.TimeAxis,
             StoreAxis: result.StoreAxis,
             Cells: result.Cells);
+    }
+
+    public InventoryAdvancedPivotResponse GetAdvancedPivot(string rowDimension, string rowLevel, string columnDimension, string columnLevel, string measure, string? year, string? quarter, string? stateMemberUniqueName, string? cityMemberUniqueName, string? storeMemberUniqueName, string? productMemberUniqueName)
+    {
+        return _inventoryAnalyticsProvider.GetAdvancedPivot(rowDimension, rowLevel, columnDimension, columnLevel, measure, year, quarter, stateMemberUniqueName, cityMemberUniqueName, storeMemberUniqueName, productMemberUniqueName);
     }
 }

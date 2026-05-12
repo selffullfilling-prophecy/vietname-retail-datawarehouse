@@ -5,8 +5,10 @@ import { KpiCard } from "../components/KpiCard";
 import { QuickTimeFilter } from "../components/QuickTimeFilter";
 import { SectionCard } from "../components/SectionCard";
 import {
+  getInventoryProductBreakdown,
   getInventoryStoreBreakdown,
   getInventoryTimeBreakdown,
+  type InventoryProductBreakdownResponse,
   type InventoryStoreBreakdownResponse,
   type InventoryTimeBreakdownResponse,
 } from "../services/api";
@@ -38,8 +40,10 @@ export function InventoryPage() {
   const [timeBreakdown, setTimeBreakdown] = useState<InventoryTimeBreakdownResponse | null>(null);
   const [yearComparisonBreakdown, setYearComparisonBreakdown] = useState<InventoryTimeBreakdownResponse | null>(null);
   const [locationBreakdown, setLocationBreakdown] = useState<InventoryStoreBreakdownResponse | null>(null);
+  const [productOptions, setProductOptions] = useState<InventoryProductBreakdownResponse["rows"]>([]);
   const [timeState, setTimeState] = useState<TimeState>({ level: "year" });
   const [locationState, setLocationState] = useState<LocationState>({});
+  const [productFilter, setProductFilter] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [isTimeLoading, setIsTimeLoading] = useState(true);
   const [isComparisonLoading, setIsComparisonLoading] = useState(true);
@@ -49,6 +53,30 @@ export function InventoryPage() {
   const locationLevel = getLocationLevel(locationState);
   const activeTimeYear = timeState.level === "quarter" || timeState.level === "month" ? timeState.year : undefined;
   const activeTimeQuarter = timeState.level === "month" ? timeState.quarter : undefined;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProductFilter() {
+      try {
+        const response = await getInventoryProductBreakdown({ level: "mamh" });
+
+        if (isMounted) {
+          setProductOptions(response.rows);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Không thể tải bộ lọc sản phẩm. Vui lòng kiểm tra API.");
+        }
+      }
+    }
+
+    void loadProductFilter();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -64,6 +92,7 @@ export function InventoryPage() {
           locationState.stateMemberUniqueName,
           locationState.cityMemberUniqueName,
           locationState.storeMemberUniqueName,
+          productFilter,
         );
 
         if (isMounted) {
@@ -85,7 +114,7 @@ export function InventoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [locationState, timeState]);
+  }, [locationState, productFilter, timeState]);
 
   useEffect(() => {
     let isMounted = true;
@@ -101,6 +130,7 @@ export function InventoryPage() {
           locationState.stateMemberUniqueName,
           locationState.cityMemberUniqueName,
           locationState.storeMemberUniqueName,
+          productFilter,
         );
 
         if (isMounted) {
@@ -122,7 +152,7 @@ export function InventoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [locationState]);
+  }, [locationState, productFilter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -137,6 +167,7 @@ export function InventoryPage() {
           locationState.cityMemberUniqueName,
           activeTimeYear,
           activeTimeQuarter,
+          productFilter,
         );
 
         if (isMounted) {
@@ -158,7 +189,7 @@ export function InventoryPage() {
     return () => {
       isMounted = false;
     };
-  }, [activeTimeQuarter, activeTimeYear, locationLevel, locationState]);
+  }, [activeTimeQuarter, activeTimeYear, locationLevel, locationState, productFilter]);
 
   const currentAverageInventory = useMemo(() => average((timeBreakdown?.rows ?? []).map((row) => row.averageInventory)), [timeBreakdown]);
   const inventoryChange = useMemo(
@@ -367,6 +398,7 @@ export function InventoryPage() {
   function resetOverview() {
     clearTime();
     clearLocation();
+    setProductFilter("");
   }
 
   function timeContextLabel() {
@@ -391,6 +423,10 @@ export function InventoryPage() {
     }
 
     return locationState.stateLabel ?? "Toàn bộ khu vực";
+  }
+
+  function productContextLabel() {
+    return productOptions.find((option) => option.memberUniqueName === productFilter)?.label ?? "Tất cả sản phẩm";
   }
 
   function timePanelTitle() {
@@ -491,13 +527,24 @@ export function InventoryPage() {
             </button>
           ) : null}
         </span>
+        <label className="context-chip context-select-chip">
+          <strong>Sản phẩm:</strong>
+          <select value={productFilter} onChange={(event) => setProductFilter(event.target.value)}>
+            <option value="">Tất cả sản phẩm</option>
+            {productOptions.map((option) => (
+              <option key={option.memberUniqueName} value={option.memberUniqueName}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="button" className="secondary-button" onClick={resetOverview}>
           Quay lại tổng quan
         </button>
       </div>
 
       <div className="analysis-chart-grid">
-        <SectionCard title={timePanelTitle()} description={`Đang lọc theo khu vực: ${locationContextLabel()}.`}>
+        <SectionCard title={timePanelTitle()} description={`Đang lọc theo khu vực: ${locationContextLabel()}. Sản phẩm: ${productContextLabel()}.`}>
           <InteractiveTrendChart
             ariaLabel="Xu hướng tồn kho trung bình"
             data={timeChartData}
@@ -507,7 +554,7 @@ export function InventoryPage() {
           />
         </SectionCard>
 
-        <SectionCard title={locationPanelTitle()} description={`Đang lọc theo thời gian: ${timeContextLabel()}.`}>
+        <SectionCard title={locationPanelTitle()} description={`Đang lọc theo thời gian: ${timeContextLabel()}. Sản phẩm: ${productContextLabel()}.`}>
           {locationLevel !== "state" ? (
             <label className="chart-search">
               <span>Tìm nhanh</span>

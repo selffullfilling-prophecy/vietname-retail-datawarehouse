@@ -23,3 +23,6 @@ obj/
 *.asdatabase
 *.deploymentoptions
 *.deploymenttargets
+
+.update1.md
+update1.md
